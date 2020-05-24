@@ -8,8 +8,6 @@
 import XCTest
 @testable import DBLive
 
-let testAppKey = "+EzwYKZrXI7eKn/KRtlhURsGsjyP2e+1++vqTDQH"
-
 final class DBLiveClientTests: XCTestCase {
 	
 	override func setUp() {
@@ -21,18 +19,9 @@ final class DBLiveClientTests: XCTestCase {
     func testSuccessfulConnection() {
 		let expectation = XCTestExpectation(description: "DBLiveClient connects successfully.")
 		
-		let dbLiveClient = DBLiveClient(appKey: testAppKey)
-		
-		dbLiveClient.on("connect") { data in
+		DBLTestClientFactory.create(expectation: expectation) { _ in
 			expectation.fulfill()
 		}
-		
-		dbLiveClient.onError { error in
-			XCTFail("An error should not have been thrown when connecting with a valid appKey.")
-			expectation.fulfill()
-		}
-				
-		dbLiveClient.connect()
 		
 		wait(for: [expectation], timeout: 10.0)
     }
@@ -60,21 +49,29 @@ final class DBLiveClientTests: XCTestCase {
 	func testPut() {
 		let expectation = XCTestExpectation(description: "DBLiveClient is able to put a string value")
 		
-		let dbLiveClient = DBLiveClient(appKey: testAppKey)
-		
-		dbLiveClient.on("connect") { data in
+		DBLTestClientFactory.create(expectation: expectation) { dbLiveClient in
 			dbLiveClient.set("hello", value: "world") { result in
 				XCTAssertTrue(result)
 				expectation.fulfill()
 			}
 		}
 		
-		dbLiveClient.onError { error in
-			XCTFail("An error should not have been thrown when connecting with a valid appKey.")
-			expectation.fulfill()
-		}
+		wait(for: [expectation], timeout: 10.0)
+	}
+	
+	func testGet() {
+		let expectation = XCTestExpectation(description: "DBLiveClient is able to put a string value")
+		
+		DBLTestClientFactory.create(expectation: expectation) { dbLiveClient in
+			dbLiveClient.set("hello2", value: "world2") { result in
+				XCTAssertTrue(result)
 				
-		dbLiveClient.connect()
+				dbLiveClient.get("hello2") { result in
+					XCTAssertEqual(result, "world2")
+					expectation.fulfill()
+				}
+			}
+		}
 		
 		wait(for: [expectation], timeout: 10.0)
 	}
@@ -82,7 +79,8 @@ final class DBLiveClientTests: XCTestCase {
     static var allTests = [
         ("testSuccessfulConnection", testSuccessfulConnection),
 		("testConnectionWithBadAppKey", testConnectionWithBadAppKey),
-		("testPut", testPut)
+		("testPut", testPut),
+		("testGet", testGet)
     ]
 	
 }

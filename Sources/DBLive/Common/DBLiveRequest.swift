@@ -11,6 +11,22 @@ final class DBLiveRequest
 {
 	let logger = DBLiveLogger("DBLiveRequest")
 	
+	func delete(url: URL, params: [String: Any] = [:], headers: [String: String] = [:], callback: @escaping (DBLiveRequestResult?, Error?) -> Void) {
+		requestResult(url: url, method: "DELETE", params: params, headers: headers, callback: callback)
+	}
+	
+	func deleteJson(url: URL, params: [String: Any] = [:], headers: [String: String] = [:], callback: @escaping (DBLiveJsonRequestResult?, Error?) -> Void) {
+		requestJsonResult(url: url, method: "DELETE", params: params, headers: headers, callback: callback)
+	}
+	
+	func get(url: URL, params: [String: Any] = [:], headers: [String: String] = [:], callback: @escaping (DBLiveRequestResult?, Error?) -> Void) {
+		requestResult(url: url, method: "GET", params: params, headers: headers, callback: callback)
+	}
+	
+	func getJson(url: URL, params: [String: Any] = [:], headers: [String: String] = [:], callback: @escaping (DBLiveJsonRequestResult?, Error?) -> Void) {
+		requestJsonResult(url: url, method: "GET", params: params, headers: headers, callback: callback)
+	}
+
 	func post(url: URL, params: [String: Any] = [:], headers: [String: String] = [:], callback: @escaping (DBLiveRequestResult?, Error?) -> Void) {
 		requestResult(url: url, method: "POST", params: params, headers: headers, callback: callback)
 	}

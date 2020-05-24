@@ -87,7 +87,7 @@ final class DBLiveAPI: NSObject {
 				return callback(nil, error)
 			}
 			
-			this.logger.debug("PUT /init '\(key)'-'\(value)' result: \(json)")
+			this.logger.debug("PUT /keys '\(key)'-'\(value)' result: \(json)")
 			
 			if let error = DBLiveError(json: json) {
 				return callback(nil, error)

@@ -14,7 +14,7 @@ open class DBLiveClient: NSObject {
 	private let logger: DBLiveLogger
 	
 	private var api: DBLiveAPI?
-	private var contentUrl: URL?
+	private var content: DBLiveContent?
 	private var handlers: [DBLiveEventHandler] = []
 	private var socket: DBLiveSocket?
 
@@ -62,11 +62,20 @@ open class DBLiveClient: NSObject {
 				return this.handleEvent("error", data: ["error": DBLiveError.connectionTimeout])
 			}
 			
-			this.contentUrl = contentUrl
+			this.content = DBLiveContent(url: contentUrl)
 			this.connectSocket(url: result.socketUrl)
 		}
 		
 		return self
+	}
+	
+	@objc
+	open func get(_ key: String, callback: @escaping (String?) -> ()) {
+		assert(content != nil, "Must call 'connect' before calling 'get'")
+
+		content!.get(key) { result in
+			callback(result)
+		}
 	}
 		
 	@objc

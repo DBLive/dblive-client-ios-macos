@@ -4,7 +4,6 @@ import XCTest
 public func allTests() -> [XCTestCaseEntry] {
     return [
 		testCase(DBLiveClientTests.allTests),
-        testCase(DBLiveTests.allTests),
     ]
 }
 #endif
