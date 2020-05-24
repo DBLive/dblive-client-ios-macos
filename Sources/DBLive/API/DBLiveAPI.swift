@@ -71,10 +71,43 @@ final class DBLiveAPI: NSObject {
 		}
 	}
 	
+	func put(_ key: String, value: String, callback: @escaping (DBLiveAPIPutResult?, DBLiveError?) -> ()) {
+		logger.debug("PUT /keys '\(key)'='\(value)'")
+		
+		var done = false
+		
+		request.putJson(url: self.url.appendingPathComponent("keys"), params: ["appKey": appKey, "key": key, "body": value, "content-type": "text/plain"]) { [weak self] result, error in
+			guard let this = self, !done else { return }
+			
+			done = true
+			
+			guard error == nil, let json = result?.json else {
+				let error = error != nil ? DBLiveError.connectionError(error) : DBLiveError.connectionTimeout
+				this.logger.error("API Connection Error: \(error)")
+				return callback(nil, error)
+			}
+			
+			this.logger.debug("PUT /init '\(key)'-'\(value)' result: \(json)")
+			
+			if let error = DBLiveError(json: json) {
+				return callback(nil, error)
+			}
+
+			let putResult = DBLiveAPIPutResult(versionId: json["versionId"] as? String)
+			
+			callback(putResult, nil)
+		}
+	}
+	
 }
 
 struct DBLiveAPIInitResult
 {
 	let socketUrl: URL
 	let contentUrl: URL?
+}
+
+struct DBLiveAPIPutResult
+{
+	let versionId: String?
 }

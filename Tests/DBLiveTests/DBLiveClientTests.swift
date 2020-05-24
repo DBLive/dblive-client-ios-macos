@@ -8,6 +8,8 @@
 import XCTest
 @testable import DBLive
 
+let testAppKey = "+EzwYKZrXI7eKn/KRtlhURsGsjyP2e+1++vqTDQH"
+
 final class DBLiveClientTests: XCTestCase {
 	
 	override func setUp() {
@@ -19,7 +21,7 @@ final class DBLiveClientTests: XCTestCase {
     func testSuccessfulConnection() {
 		let expectation = XCTestExpectation(description: "DBLiveClient connects successfully.")
 		
-		let dbLiveClient = DBLiveClient(appKey: "+EzwYKZrXI7eKn/KRtlhURsGsjyP2e+1++vqTDQH")
+		let dbLiveClient = DBLiveClient(appKey: testAppKey)
 		
 		dbLiveClient.on("connect") { data in
 			expectation.fulfill()
@@ -54,10 +56,33 @@ final class DBLiveClientTests: XCTestCase {
 		
 		wait(for: [expectation], timeout: 10.0)
 	}
+	
+	func testPut() {
+		let expectation = XCTestExpectation(description: "DBLiveClient is able to put a string value")
+		
+		let dbLiveClient = DBLiveClient(appKey: testAppKey)
+		
+		dbLiveClient.on("connect") { data in
+			dbLiveClient.set("hello", value: "world") { result in
+				XCTAssertTrue(result)
+				expectation.fulfill()
+			}
+		}
+		
+		dbLiveClient.onError { error in
+			XCTFail("An error should not have been thrown when connecting with a valid appKey.")
+			expectation.fulfill()
+		}
+				
+		dbLiveClient.connect()
+		
+		wait(for: [expectation], timeout: 10.0)
+	}
 
     static var allTests = [
         ("testSuccessfulConnection", testSuccessfulConnection),
-		("testConnectionWithBadAppKey", testConnectionWithBadAppKey)
+		("testConnectionWithBadAppKey", testConnectionWithBadAppKey),
+		("testPut", testPut)
     ]
 	
 }

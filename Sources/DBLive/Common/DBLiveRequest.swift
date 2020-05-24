@@ -19,6 +19,14 @@ final class DBLiveRequest
 		requestJsonResult(url: url, method: "POST", params: params, headers: headers, callback: callback)
 	}
 	
+	func put(url: URL, params: [String: Any] = [:], headers: [String: String] = [:], callback: @escaping (DBLiveRequestResult?, Error?) -> Void) {
+		requestResult(url: url, method: "PUT", params: params, headers: headers, callback: callback)
+	}
+	
+	func putJson(url: URL, params: [String: Any] = [:], headers: [String: String] = [:], callback: @escaping (DBLiveJsonRequestResult?, Error?) -> Void) {
+		requestJsonResult(url: url, method: "PUT", params: params, headers: headers, callback: callback)
+	}
+	
 	func request(url: URL, method: String = "GET", params: [String : Any] = [:], headers: [String : String] = [:], callback: @escaping (Data?, URLResponse?, Error?) -> Void) {
 		var url = url
 		

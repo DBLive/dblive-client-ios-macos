@@ -68,6 +68,17 @@ open class DBLiveClient: NSObject {
 		
 		return self
 	}
+		
+	@objc
+	open func handleEvent(_ event: String, data: [String: Any]) {
+		logger.debug("handleEvent(\(event), \(data)")
+		
+		for handler in handlers where handler.event == event {
+			DispatchQueue.global(qos: .background).async {
+				handler.callback(data)
+			}
+		}
+	}
 	
 	@objc
 	@discardableResult
@@ -90,13 +101,18 @@ open class DBLiveClient: NSObject {
 	}
 	
 	@objc
-	open func handleEvent(_ event: String, data: [String: Any]) {
-		logger.debug("handleEvent(\(event), \(data)")
-		
-		for handler in handlers where handler.event == event {
-			DispatchQueue.global(qos: .background).async {
-				handler.callback(data)
+	open func set(_ key: String, value: String, callback: @escaping (Bool) -> ()) {
+		assert(api != nil, "Must call 'connect' before calling 'set'")
+
+		api!.put(key, value: value) { [weak self] (result, error) in
+			guard let this = self else { return }
+			
+			if let error = error {
+				this.logger.debug("Failed to set '\(key)' to '\(value)': \(error)")
+				return callback(false)
 			}
+			
+			return callback(result?.versionId != nil)
 		}
 	}
 	
