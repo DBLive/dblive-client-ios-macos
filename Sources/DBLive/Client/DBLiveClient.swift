@@ -17,6 +17,7 @@ open class DBLiveClient: NSObject {
 	private var content: DBLiveContent?
 	private var handlers: [DBLiveEventHandler<[String: Any]>] = []
 	private var keys: [String: DBLiveKey] = [:]
+	private var setEnv: String?
 	private var socket: DBLiveSocket?
 
 	@objc
@@ -63,6 +64,7 @@ open class DBLiveClient: NSObject {
 				return this.handleEvent("error", data: ["error": DBLiveError.connectionTimeout])
 			}
 			
+			this.setEnv = result.setEnv
 			this.connectSocket(url: result.socketUrl)
 			this.content = DBLiveContent(url: contentUrl, socket: this.socket!)
 		}
@@ -147,24 +149,27 @@ open class DBLiveClient: NSObject {
 	
 	@objc
 	open func set(_ key: String, value: String, contentType: String = "text/plain", callback: @escaping (Bool) -> ()) {
-		assert(socket != nil, "Must call 'connect' before calling 'set'")
+		if (setEnv == "socket") {
+			assert(socket != nil, "Must call 'connect' before calling 'set'")
 
-		socket!.put(key, value: value) { result in
-			return callback(result.versionId != nil)
+			socket!.put(key, value: value) { result in
+				return callback(result.versionId != nil)
+			}
 		}
+		else {
+			assert(api != nil, "Must call 'connect' before calling 'set'")
 
-//		assert(api != nil, "Must call 'connect' before calling 'set'")
-//
-//		api!.put(key, value: value) { [weak self] (result, error) in
-//			let logger = self?.logger
-//
-//			if let error = error {
-//				logger?.debug("Failed to set '\(key)' to '\(value)': \(error)")
-//				return callback(false)
-//			}
-//
-//			return callback(result?.versionId != nil)
-//		}
+			api!.put(key, value: value) { [weak self] (result, error) in
+				let logger = self?.logger
+
+				if let error = error {
+					logger?.debug("Failed to set '\(key)' to '\(value)': \(error)")
+					return callback(false)
+				}
+
+				return callback(result?.versionId != nil)
+			}
+		}
 	}
 	
 	func set(_ key: String, value: [String: Any], callback: @escaping (Bool) -> ()) {

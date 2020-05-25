@@ -47,13 +47,7 @@ final class DBLiveAPI: NSObject {
 				this.url = apiUrl
 			}
 			
-			let socketDomain = json["socketDomain"] as? String
-			let socketUrl = socketDomain != nil ? URL(string: "https://\(socketDomain!)/") : nil
-			
-			let contentDomain = json["contentDomain"] as? String
-			let contentUrl = contentDomain != nil ? URL(string: "https://\(contentDomain!)/") : nil
-			
-			let initResult = DBLiveAPIInitResult(socketUrl: socketUrl ?? URL(string: "https://s.dblive.io/")!, contentUrl: contentUrl)
+			let initResult = DBLiveAPIInitResult(json)
 			
 			callback(initResult, nil)
 		}
@@ -110,8 +104,21 @@ final class DBLiveAPI: NSObject {
 
 struct DBLiveAPIInitResult
 {
+	let setEnv: String?
 	let socketUrl: URL
 	let contentUrl: URL?
+	
+	init(_ json: [String: Any]) {
+		let socketDomain = json["socketDomain"] as? String
+		let socketUrl = socketDomain != nil ? URL(string: "https://\(socketDomain!)/") : nil
+		
+		let contentDomain = json["contentDomain"] as? String
+		let contentUrl = contentDomain != nil ? URL(string: "https://\(contentDomain!)/") : nil
+		
+		self.socketUrl = socketUrl ?? URL(string: "https://s.dblive.io/")!
+		self.contentUrl = contentUrl
+		self.setEnv = json["setEnv"] as? String
+	}
 }
 
 struct DBLiveAPIPutResult

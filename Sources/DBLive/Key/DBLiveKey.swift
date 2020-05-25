@@ -78,15 +78,21 @@ final class DBLiveKey {
 		logger.debug("onKeyEvent(\(data)")
 		
 		let action = data["action"] as! String,
+			value = data["value"] as? String,
 			version = data["version"] as? String,
 			versionKey = version != nil ? "\(key)-\(version!)" : key
 		
 		if action == "changed" {
-			client?.get(versionKey, callback: { [weak self] value in
-				guard let this = self else { return }
-				
-				this.emitToListeners(action: "changed", value: value)
-			})
+			if let value = value {
+				emitToListeners(action: "changed", value: value)
+			}
+			else {
+				client?.get(versionKey, callback: { [weak self] value in
+					guard let this = self else { return }
+					
+					this.emitToListeners(action: "changed", value: value)
+				})
+			}
 		}
 		else if action == "deleted" {
 			emitToListeners(action: "changed", value: nil)

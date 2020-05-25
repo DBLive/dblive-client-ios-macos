@@ -174,6 +174,7 @@ final class DBLiveSocket: NSObject {
 		eventHandler("key:\(key)", [
 			"action": action,
 			"key": key,
+			"value": data["value"] as? String as Any,
 			"version": data["version"] as? String as Any
 		])
 	}
