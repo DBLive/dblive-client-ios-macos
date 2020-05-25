@@ -27,8 +27,6 @@ final class DBLiveContent: NSObject {
 		
 		let url = self.url.appendingPathComponent(key)
 		
-		logger.debug(url.absoluteString)
-		
 		if let value = cache.get(url) {
 			logger.debug("Cache hit. Returning cache value first.")
 			callback(String(data: value, encoding: .utf8))

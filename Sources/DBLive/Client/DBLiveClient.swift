@@ -64,10 +64,7 @@ open class DBLiveClient: NSObject {
 			}
 			
 			this.connectSocket(url: result.socketUrl)
-			
-			if let socket = this.socket {
-				this.content = DBLiveContent(url: contentUrl, socket: socket)
-			}
+			this.content = DBLiveContent(url: contentUrl, socket: this.socket!)
 		}
 		
 		return self
@@ -80,6 +77,13 @@ open class DBLiveClient: NSObject {
 		content!.get(key) { result in
 			callback(result)
 		}
+	}
+	
+	@objc
+	func getAndListen(_ key: String, callback: @escaping (String?) -> ()) -> DBLiveKeyEventListener {
+		get(key, callback: callback)
+		
+		return self.key(key).onChanged(handler: callback)
 	}
 		
 	@objc

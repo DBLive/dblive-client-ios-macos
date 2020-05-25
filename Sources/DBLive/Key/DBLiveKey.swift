@@ -9,9 +9,15 @@ import Foundation
 
 final class DBLiveKey {
 	
-	static private var keyWatcherCount: [String: Int] = [:]
+	private let key: String
+	private let logger = DBLiveLogger("DBLiveKey")
 	
-	var isWatching: Bool {
+	private weak var client: DBLiveClient?
+	private var clientKeyListener: UUID?
+	private var listeners: [DBLiveKeyEventListener] = []
+	private weak var socket: DBLiveSocket?
+	
+	private var isWatching: Bool {
 		didSet {
 			guard isWatching != oldValue else { return }
 			
@@ -24,14 +30,6 @@ final class DBLiveKey {
 		}
 	}
 	
-	private let key: String
-	private let logger = DBLiveLogger("DBLiveKey")
-	
-	private weak var client: DBLiveClient?
-	private var clientKeyListener: UUID?
-	private var handlers: [DBLiveKeyEventHandler] = []
-	private weak var socket: DBLiveSocket?
-	
 	init(key: String, client: DBLiveClient, socket: DBLiveSocket) {
 		self.key = key
 		self.client = client
@@ -40,18 +38,40 @@ final class DBLiveKey {
 		isWatching = true
 		startWatching()
 	}
-	
+		
 	@discardableResult
-	func onChanged(handler: @escaping (String?) -> ()) -> UUID {
-		let handler = DBLiveKeyEventHandler("changed", handler: handler)
+	func onChanged(handler: @escaping (String?) -> ()) -> DBLiveKeyEventListener {
+		let listener = DBLiveKeyEventListener("changed", handler: handler) { [weak self] in
+			guard let this = self else { return }
+			this.checkListenerStatus()
+		}
 		
-		handlers.append(handler)
+		listeners.append(listener)
 		
-		return handler.id
+		return listener
 	}
 	
-	func removeHandler(id: UUID) {
-		handlers = handlers.filter { $0.id != id }
+	private func checkListenerStatus() {
+		if isWatching {
+			if !listeners.contains(where: { $0.isListening }) {
+				isWatching = false
+			}
+		}
+		else {
+			if listeners.contains(where: { $0.isListening }) {
+				isWatching = true
+			}
+		}
+	}
+	
+	private func emitToListeners(action: String, value: String?) {
+		logger.debug("emitToListener(\(action), \(value ?? "nil")")
+		
+		for listener in listeners where listener.isListening && listener.action == action {
+			DispatchQueue.global(qos: .background).async {
+				listener.handler(value)
+			}
+		}
 	}
 	
 	private func onKeyEvent(data: [String: Any]) {
@@ -64,14 +84,12 @@ final class DBLiveKey {
 		if action == "changed" {
 			client?.get(versionKey, callback: { [weak self] value in
 				guard let this = self else { return }
-			
-				for handler in this.handlers where handler.action == action {
-					this.logger.debug("calling handler")
-					DispatchQueue.global(qos: .background).async {
-						handler.handler(value)
-					}
-				}
+				
+				this.emitToListeners(action: "changed", value: value)
 			})
+		}
+		else if action == "deleted" {
+			emitToListeners(action: "changed", value: nil)
 		}
 		else {
 			logger.warn("No key event handler for action '\(action)'")
@@ -92,7 +110,6 @@ final class DBLiveKey {
 		})
 		
 		socket?.watch(key)
-		DBLiveKey.keyWatcherCount[key] = (DBLiveKey.keyWatcherCount[key] ?? 0) + 1
 	}
 	
 	private func stopWatching() {
@@ -103,11 +120,7 @@ final class DBLiveKey {
 			self.clientKeyListener = nil
 		}
 
-		DBLiveKey.keyWatcherCount[key] = max((DBLiveKey.keyWatcherCount[key] ?? 0) - 1, 0)
-		
-		if DBLiveKey.keyWatcherCount[key] == 0 {
-			socket?.stopWatching(key)
-		}
+		socket?.stopWatching(key)
 	}
 	
 	deinit {
