@@ -86,17 +86,6 @@ open class DBLiveClient: NSObject {
 		return self.key(key).onChanged(handler: callback)
 	}
 		
-	@objc
-	open func handleEvent(_ event: String, data: [String: Any]) {
-		logger.debug("handleEvent(\(event), \(data)")
-		
-		for handler in handlers where handler.event == event {
-			DispatchQueue.global(qos: .background).async {
-				handler.callback(data)
-			}
-		}
-	}
-	
 	func key(_ key: String) -> DBLiveKey {
 		assert(socket != nil, "Must call 'connect' before calling 'key'")
 		
@@ -135,23 +124,43 @@ open class DBLiveClient: NSObject {
 	
 	@objc
 	open func set(_ key: String, value: String, callback: @escaping (Bool) -> ()) {
+//		assert(socket != nil, "Must call 'connect' before calling 'set'")
+//
+//		socket!.put(key, value: value) { result in
+//			return callback(result.versionId != nil)
+//		}
+
 		assert(api != nil, "Must call 'connect' before calling 'set'")
 
 		api!.put(key, value: value) { [weak self] (result, error) in
-			guard let this = self else { return }
-			
+			let logger = self?.logger
+
 			if let error = error {
-				this.logger.debug("Failed to set '\(key)' to '\(value)': \(error)")
+				logger?.debug("Failed to set '\(key)' to '\(value)': \(error)")
 				return callback(false)
 			}
-			
+
 			return callback(result?.versionId != nil)
 		}
 	}
 	
 	private func connectSocket(url: URL) {
 		logger.debug("Connecting to Socket")
-		socket = DBLiveSocket(url: url, appKey: appKey, client: self)
+		socket = DBLiveSocket(url: url, appKey: appKey) { [weak self] event, data in
+			guard let this = self else { return }
+			
+			this.handleEvent(event, data: data)
+		}
+	}
+	
+	private func handleEvent(_ event: String, data: [String: Any]) {
+		logger.debug("handleEvent(\(event), \(data)")
+		
+		for handler in handlers where handler.event == event {
+			DispatchQueue.global(qos: .background).async {
+				handler.callback(data)
+			}
+		}
 	}
 	
 	deinit {

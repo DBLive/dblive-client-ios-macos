@@ -61,11 +61,11 @@ final class DBLiveAPI: NSObject {
 		guard timeout >= 0.1 else { return }
 		
 		DispatchQueue.global(qos: .background).asyncAfter(deadline: DispatchTime.now() + timeout) { [weak self] in
-			guard let this = self, !done else { return }
+			guard !done else { return }
 			
 			done = true
 			
-			this.logger.debug("/init timed out")
+			self?.logger.debug("/init timed out")
 			
 			callback(nil, DBLiveError.connectionTimeout)
 		}
@@ -76,18 +76,25 @@ final class DBLiveAPI: NSObject {
 		
 		var done = false
 		
-		request.putJson(url: self.url.appendingPathComponent("keys"), params: ["appKey": appKey, "key": key, "body": value, "content-type": "text/plain"]) { [weak self] result, error in
-			guard let this = self, !done else { return }
+		let params: [String: Any] = [
+			"appKey": appKey,
+			"key": key,
+			"body": value,
+			"content-type": "text/plain"
+		]
+
+		request.putJson(url: self.url.appendingPathComponent("keys"), params: params) { [weak self] result, error in
+			guard !done else { return }
 			
 			done = true
 			
 			guard error == nil, let json = result?.json else {
 				let error = error != nil ? DBLiveError.connectionError(error) : DBLiveError.connectionTimeout
-				this.logger.error("API Connection Error: \(error)")
+				self?.logger.error("API Connection Error: \(error)")
 				return callback(nil, error)
 			}
 			
-			this.logger.debug("PUT /keys '\(key)'-'\(value)' result: \(json)")
+			self?.logger.debug("PUT /keys '\(key)'-'\(value)' result: \(json)")
 			
 			if let error = DBLiveError(json: json) {
 				return callback(nil, error)

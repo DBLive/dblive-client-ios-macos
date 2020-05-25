@@ -13,7 +13,7 @@ final class DBLiveClientTests: XCTestCase {
 	override func setUp() {
 		super.setUp()
 		
-		DBLiveLogger.doLog = true
+//		DBLiveLogger.doLog = true
 	}
 	
     func testSuccessfulConnection() {

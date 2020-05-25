@@ -13,18 +13,19 @@ final class DBLiveSocket: NSObject {
 	var isConnected = false
 	
 	private let appKey: String
+	private let eventHandler: (String, [String:Any]) -> ()
 	private let logger = DBLiveLogger("DBLiveSocket")
+	private let timeout: Double = 0
 	private let url: URL
 	
-	private weak var client: DBLiveClient?
 	private var reconnectOnDisconnect = false
 	private var socket: SocketIOClient?
 	private var socketManager: SocketManager?
 
-	init(url: URL, appKey: String, client: DBLiveClient) {
+	init(url: URL, appKey: String, eventHandler: @escaping (String, [String:Any]) -> ()) {
 		self.url = url
 		self.appKey = appKey
-		self.client = client
+		self.eventHandler = eventHandler
 		
 		super.init()
 		
@@ -33,6 +34,28 @@ final class DBLiveSocket: NSObject {
 	
 	func dispose() {
 		socketManager?.disconnect()
+	}
+	
+	func put(_ key: String, value: String, contentType: String = "text/plain", callback: @escaping (DBLiveAPIPutResult) -> ()) {
+		guard let socket = socket else { return callback(DBLiveAPIPutResult(versionId: nil)) }
+		
+		let params = [
+			"body": value,
+			"contentType": contentType,
+			"key": key,
+		]
+		
+		socket.emitWithAck("put", with: [params]).timingOut(after: timeout) { [weak self] data in
+			let logger = self?.logger
+			
+			logger?.debug("put ack: \(data)")
+			
+			if let data = data.first as? [String: Any], let versionId = data["versionId"] as? String {
+				return callback(DBLiveAPIPutResult(versionId: versionId))
+			}
+			
+			return callback(DBLiveAPIPutResult(versionId: nil))
+		}
 	}
 	
 	func stopWatching(_ key: String) {
@@ -95,7 +118,7 @@ final class DBLiveSocket: NSObject {
 	private func emitAppKey() {
 		logger.debug("Approving appKey")
 		
-		socket?.emitWithAck("app", with: [["appKey": appKey]]).timingOut(after: 0) { [weak self] data in
+		socket?.emitWithAck("app", with: [["appKey": appKey]]).timingOut(after: timeout) { [weak self] data in
 			guard let this = self else { return }
 			
 			this.logger.debug("appKey ack: \(data)")
@@ -103,13 +126,13 @@ final class DBLiveSocket: NSObject {
 			let data = data.first as? [String: Any]
 			
 			if data == nil {
-				this.client?.handleEvent("error", data: ["error": DBLiveError.unknownError])
+				this.eventHandler("error", ["error": DBLiveError.unknownError])
 			}
 			else if let error = DBLiveError(json: data) {
-				this.client?.handleEvent("error", data: ["error": error])
+				this.eventHandler("error", ["error": error])
 			}
 			else {
-				this.client?.handleEvent("connect", data: [:])
+				this.eventHandler("connect", [:])
 			}
 		}
 	}
@@ -148,7 +171,7 @@ final class DBLiveSocket: NSObject {
 		
 		guard let action = data["action"] as? String, let key = data["key"] as? String else { return }
 		
-		client?.handleEvent("key:\(key)", data: [
+		eventHandler("key:\(key)", [
 			"action": action,
 			"key": key,
 			"version": data["version"] as? String as Any
@@ -177,3 +200,5 @@ final class DBLiveSocket: NSObject {
 	}
 	
 }
+
+

@@ -72,13 +72,11 @@ final class DBLiveRequest
 		
 		// make call
 		URLSession.shared.dataTask(with: request) { [weak self] (data, response, error) in
-			guard let this = self else { return }
-			
 			guard error == nil else { return callback(nil, nil, error) }
 
 			guard let data = data else { return callback(nil, nil, DBLiveRequestErrors.malformedRequestData) }
 
-			this.logger.debug("\(url.absoluteString) responded")
+			self?.logger.debug("\(url.absoluteString) responded")
 			
 			callback(data, response, nil)
 		}.resume()
