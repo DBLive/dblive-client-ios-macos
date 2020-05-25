@@ -47,8 +47,8 @@ final class DBLiveClientTests: XCTestCase {
 		wait(for: [expectation], timeout: 10.0)
 	}
 	
-	func testPut() {
-		let expectation = XCTestExpectation(description: "DBLiveClient is able to put a string value")
+	func testSet() {
+		let expectation = XCTestExpectation(description: "DBLiveClient is able to set a string value")
 				
 		DBLTestClientFactory.create(expectation: expectation) { dbLiveClient in
 			dbLiveClient.set("hello", value: "world") { result in
@@ -105,11 +105,59 @@ final class DBLiveClientTests: XCTestCase {
 		
 		wait(for: [expectation], timeout: 10.0)
 	}
+	
+	func testGetJsonAndListen() {
+		let expectation = XCTestExpectation(description: "DBLiveClient is able to put a string value")
+		
+		DBLTestClientFactory.create(expectation: expectation) { dbLiveClient in
+			let key = "testGetJsonAndListen-\(UUID())"
+			
+			var listener: DBLiveKeyEventListener? = nil,
+				count = 0
+			
+			listener = dbLiveClient.getJsonAndListen(key) { result in
+				count += 1
+				
+				if count == 1 {
+					XCTAssertNil(result)
+					
+					dbLiveClient.set(key, value: ["hello": "world"]) { success in
+						XCTAssertTrue(success)
+					}
+				}
+				else if count == 2 {
+					XCTAssertNotNil(result)
+					XCTAssertEqual(result?["hello"] as? String, "world")
+					
+					dbLiveClient.set(key, value: ["hello2": "world2"]) { success in
+						XCTAssertTrue(success)
+					}
+				}
+				else if count == 3 {
+					XCTAssertNotNil(result)
+					XCTAssertEqual(result?["hello2"] as? String, "world2")
+					XCTAssertNil(result?["hello"])
+					
+					listener!.isListening = false
+					
+					dbLiveClient.set(key, value: ["hello3": "world3"]) { success in
+						XCTAssertTrue(success)
+						expectation.fulfill()
+					}
+				}
+				else {
+					XCTFail("Listener should never be called this many times")
+				}
+			}
+		}
+		
+		wait(for: [expectation], timeout: 10.0)
+	}
 
     static var allTests = [
         ("testSuccessfulConnection", testSuccessfulConnection),
 		("testConnectionWithBadAppKey", testConnectionWithBadAppKey),
-		("testPut", testPut),
+		("testSet", testSet),
 		("testGet", testGet),
 		("testOnKeyChanged", testOnKeyChanged)
     ]

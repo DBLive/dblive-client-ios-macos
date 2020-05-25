@@ -80,10 +80,33 @@ open class DBLiveClient: NSObject {
 	}
 	
 	@objc
+	@discardableResult
 	func getAndListen(_ key: String, callback: @escaping (String?) -> ()) -> DBLiveKeyEventListener {
 		get(key, callback: callback)
 		
 		return self.key(key).onChanged(handler: callback)
+	}
+	
+	func getJson(_ key: String, callback: @escaping([String: Any]?) -> ()) {
+		assert(content != nil, "Must call 'connect' before calling 'getJson'")
+
+		content!.get(key) { result in
+			guard let result = result?.data(using: .utf8) else { return callback(nil) }
+			
+			callback(try? JSONSerialization.jsonObject(with: result, options: []) as? [String: Any])
+		}
+	}
+	
+	@objc
+	@discardableResult
+	func getJsonAndListen(_ key: String, callback: @escaping ([String: Any]?) -> ()) -> DBLiveKeyEventListener {
+		getJson(key, callback: callback)
+		
+		return self.key(key).onChanged { result in
+			guard let result = result?.data(using: .utf8) else { return callback(nil) }
+
+			callback(try? JSONSerialization.jsonObject(with: result, options: []) as? [String: Any])
+		}
 	}
 		
 	func key(_ key: String) -> DBLiveKey {
@@ -123,25 +146,33 @@ open class DBLiveClient: NSObject {
 	}
 	
 	@objc
-	open func set(_ key: String, value: String, callback: @escaping (Bool) -> ()) {
-//		assert(socket != nil, "Must call 'connect' before calling 'set'")
-//
-//		socket!.put(key, value: value) { result in
-//			return callback(result.versionId != nil)
-//		}
+	open func set(_ key: String, value: String, contentType: String = "text/plain", callback: @escaping (Bool) -> ()) {
+		assert(socket != nil, "Must call 'connect' before calling 'set'")
 
-		assert(api != nil, "Must call 'connect' before calling 'set'")
-
-		api!.put(key, value: value) { [weak self] (result, error) in
-			let logger = self?.logger
-
-			if let error = error {
-				logger?.debug("Failed to set '\(key)' to '\(value)': \(error)")
-				return callback(false)
-			}
-
-			return callback(result?.versionId != nil)
+		socket!.put(key, value: value) { result in
+			return callback(result.versionId != nil)
 		}
+
+//		assert(api != nil, "Must call 'connect' before calling 'set'")
+//
+//		api!.put(key, value: value) { [weak self] (result, error) in
+//			let logger = self?.logger
+//
+//			if let error = error {
+//				logger?.debug("Failed to set '\(key)' to '\(value)': \(error)")
+//				return callback(false)
+//			}
+//
+//			return callback(result?.versionId != nil)
+//		}
+	}
+	
+	func set(_ key: String, value: [String: Any], callback: @escaping (Bool) -> ()) {
+		guard let value = try? JSONSerialization.data(withJSONObject: value) else {
+			return callback(false)
+		}
+		
+		set(key, value: String(data: value, encoding: .utf8)!, contentType: "application/json", callback: callback)
 	}
 	
 	private func connectSocket(url: URL) {

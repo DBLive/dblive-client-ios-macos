@@ -71,7 +71,7 @@ final class DBLiveAPI: NSObject {
 		}
 	}
 	
-	func put(_ key: String, value: String, callback: @escaping (DBLiveAPIPutResult?, DBLiveError?) -> ()) {
+	func put(_ key: String, value: String, contentType: String = "text/plain", callback: @escaping (DBLiveAPIPutResult?, DBLiveError?) -> ()) {
 		logger.debug("PUT /keys '\(key)'='\(value)'")
 		
 		var done = false
@@ -80,7 +80,7 @@ final class DBLiveAPI: NSObject {
 			"appKey": appKey,
 			"key": key,
 			"body": value,
-			"content-type": "text/plain"
+			"content-type": contentType
 		]
 
 		request.putJson(url: self.url.appendingPathComponent("keys"), params: params) { [weak self] result, error in
