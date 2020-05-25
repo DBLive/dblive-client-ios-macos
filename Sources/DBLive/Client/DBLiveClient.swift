@@ -16,7 +16,7 @@ open class DBLiveClient: NSObject {
 	private var api: DBLiveAPI?
 	private var content: DBLiveContent?
 	private var handlers: [DBLiveEventHandler<[String: Any]>] = []
-	private var keys: [String: DBLiveKeyWatcher] = [:]
+	private var keys: [String: DBLiveKey] = [:]
 	private var socket: DBLiveSocket?
 
 	@objc
@@ -93,13 +93,13 @@ open class DBLiveClient: NSObject {
 		}
 	}
 	
-	func key(_ key: String) -> DBLiveKeyWatcher {
+	func key(_ key: String) -> DBLiveKey {
 		assert(socket != nil, "Must call 'connect' before calling 'key'")
 		
-		let keyWatcher = keys[key] ?? DBLiveKeyWatcher(key: key, client: self, socket: socket!)
-		keys[key] = keyWatcher
+		let dbLiveKey = keys[key] ?? DBLiveKey(key: key, client: self, socket: socket!)
+		keys[key] = dbLiveKey
 		
-		return keyWatcher
+		return dbLiveKey
 	}
 	
 	@objc

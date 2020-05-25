@@ -1,5 +1,5 @@
 //
-//  DBLiveKeyWatcher.swift
+//  DBLiveKey.swift
 //  
 //
 //  Created by Mike Richards on 5/24/20.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class DBLiveKeyWatcher {
+final class DBLiveKey {
 	
 	static private var keyWatcherCount: [String: Int] = [:]
 	
@@ -25,7 +25,7 @@ final class DBLiveKeyWatcher {
 	}
 	
 	private let key: String
-	private let logger = DBLiveLogger("DBLiveKeyWatcher")
+	private let logger = DBLiveLogger("DBLiveKey")
 	
 	private weak var client: DBLiveClient?
 	private var clientKeyListener: UUID?
@@ -86,13 +86,13 @@ final class DBLiveKeyWatcher {
 		}
 		
 		clientKeyListener = client?.on("key:\(key)", callback: { [weak self] data in
-			guard let this = self else { return }			
+			guard let this = self else { return }
 			
 			this.onKeyEvent(data: data)
 		})
 		
 		socket?.watch(key)
-		DBLiveKeyWatcher.keyWatcherCount[key] = (DBLiveKeyWatcher.keyWatcherCount[key] ?? 0) + 1
+		DBLiveKey.keyWatcherCount[key] = (DBLiveKey.keyWatcherCount[key] ?? 0) + 1
 	}
 	
 	private func stopWatching() {
@@ -103,9 +103,9 @@ final class DBLiveKeyWatcher {
 			self.clientKeyListener = nil
 		}
 
-		DBLiveKeyWatcher.keyWatcherCount[key] = max((DBLiveKeyWatcher.keyWatcherCount[key] ?? 0) - 1, 0)
+		DBLiveKey.keyWatcherCount[key] = max((DBLiveKey.keyWatcherCount[key] ?? 0) - 1, 0)
 		
-		if DBLiveKeyWatcher.keyWatcherCount[key] == 0 {
+		if DBLiveKey.keyWatcherCount[key] == 0 {
 			socket?.stopWatching(key)
 		}
 	}
