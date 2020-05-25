@@ -18,8 +18,9 @@ final class DBLiveClientTests: XCTestCase {
 	
     func testSuccessfulConnection() {
 		let expectation = XCTestExpectation(description: "DBLiveClient connects successfully.")
-		
-		DBLTestClientFactory.create(expectation: expectation) { _ in
+
+		DBLTestClientFactory.create(expectation: expectation) { data in
+			XCTAssertEqual(data.attributeKeys.count, 0)
 			expectation.fulfill()
 		}
 		
@@ -48,7 +49,7 @@ final class DBLiveClientTests: XCTestCase {
 	
 	func testPut() {
 		let expectation = XCTestExpectation(description: "DBLiveClient is able to put a string value")
-		
+				
 		DBLTestClientFactory.create(expectation: expectation) { dbLiveClient in
 			dbLiveClient.set("hello", value: "world") { result in
 				XCTAssertTrue(result)
@@ -63,13 +64,42 @@ final class DBLiveClientTests: XCTestCase {
 		let expectation = XCTestExpectation(description: "DBLiveClient is able to put a string value")
 		
 		DBLTestClientFactory.create(expectation: expectation) { dbLiveClient in
-			dbLiveClient.set("hello2", value: "world2") { result in
+			let key = "ios-testPut-\(UUID())",
+				value = "ios-testPut-value-\(UUID())"
+
+			dbLiveClient.set(key, value: value) { result in
 				XCTAssertTrue(result)
 				
-				dbLiveClient.get("hello2") { result in
-					XCTAssertEqual(result, "world2")
+				dbLiveClient.get(key) { result in
+					XCTAssertEqual(result, value)
 					expectation.fulfill()
 				}
+			}
+		}
+		
+		wait(for: [expectation], timeout: 10.0)
+	}
+	
+	func testOnKeyChanged() {
+		let expectation = XCTestExpectation(description: "DBLiveClient is able to put a string value")
+		
+		DBLTestClientFactory.create(expectation: expectation) { dbLiveClient in
+			let key = "testOnKeyChanged",
+				value = UUID().description
+			
+			dbLiveClient.key(key).onChanged { newValue in
+				if let newValue = newValue {
+					XCTAssertEqual(newValue, value)
+				}
+				else {
+					XCTFail("newValue shouldn't be nil")
+				}
+				
+				expectation.fulfill()
+			}
+			
+			dbLiveClient.set(key, value: value) { result in
+				XCTAssertTrue(result)
 			}
 		}
 		
@@ -80,7 +110,8 @@ final class DBLiveClientTests: XCTestCase {
         ("testSuccessfulConnection", testSuccessfulConnection),
 		("testConnectionWithBadAppKey", testConnectionWithBadAppKey),
 		("testPut", testPut),
-		("testGet", testGet)
+		("testGet", testGet),
+		("testOnKeyChanged", testOnKeyChanged)
     ]
 	
 }

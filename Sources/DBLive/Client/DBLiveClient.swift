@@ -15,7 +15,8 @@ open class DBLiveClient: NSObject {
 	
 	private var api: DBLiveAPI?
 	private var content: DBLiveContent?
-	private var handlers: [DBLiveEventHandler] = []
+	private var handlers: [DBLiveEventHandler<[String: Any]>] = []
+	private var keys: [String: DBLiveKeyWatcher] = [:]
 	private var socket: DBLiveSocket?
 
 	@objc
@@ -62,8 +63,11 @@ open class DBLiveClient: NSObject {
 				return this.handleEvent("error", data: ["error": DBLiveError.connectionTimeout])
 			}
 			
-			this.content = DBLiveContent(url: contentUrl)
 			this.connectSocket(url: result.socketUrl)
+			
+			if let socket = this.socket {
+				this.content = DBLiveContent(url: contentUrl, socket: socket)
+			}
 		}
 		
 		return self
@@ -89,9 +93,25 @@ open class DBLiveClient: NSObject {
 		}
 	}
 	
+	func key(_ key: String) -> DBLiveKeyWatcher {
+		assert(socket != nil, "Must call 'connect' before calling 'key'")
+		
+		let keyWatcher = keys[key] ?? DBLiveKeyWatcher(key: key, client: self, socket: socket!)
+		keys[key] = keyWatcher
+		
+		return keyWatcher
+	}
+	
+	@objc
+	open func off(id: UUID) {
+		logger.debug("Removing handler \(id)")
+		
+		handlers = handlers.filter { $0.id != id }
+	}
+	
 	@objc
 	@discardableResult
-	open func on(_ event: String, callback: @escaping DBLiveCallback) -> UUID {
+	open func on(_ event: String, callback: @escaping DBLiveCallback<[String: Any]>) -> UUID {
 		let handler = DBLiveEventHandler(event, callback: callback)
 		
 		handlers.append(handler)

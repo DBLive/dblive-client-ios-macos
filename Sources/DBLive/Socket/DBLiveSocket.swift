@@ -35,6 +35,16 @@ final class DBLiveSocket: NSObject {
 		socketManager?.disconnect()
 	}
 	
+	func stopWatching(_ key: String) {
+		logger.debug("stop watching key \(key)")
+		socket?.emit("stop-watching", with: [["key": key]])
+	}
+	
+	func watch(_ key: String) {
+		logger.debug("watch key \(key)")
+		socket?.emit("watch", with: [["key": key]])
+	}
+	
 	private func connect() {
 		logger.debug("Connecting to socketUrl \(url.absoluteString)")
 		
@@ -64,6 +74,11 @@ final class DBLiveSocket: NSObject {
 		socket!.on("error") { [weak self] data, ack in
 			guard let this = self else { return }
 			this.onError(data: data, ack: ack)
+		}
+		
+		socket!.on("key") { [weak self] data, ack in
+			guard let this = self else { return }
+			this.onKey(data: data.first as? [String: Any] ?? [:])
 		}
 		
 		socket!.on("reconnect") { [weak self] data, ack in
@@ -126,6 +141,18 @@ final class DBLiveSocket: NSObject {
 			reconnectOnDisconnect = true
 			socket.disconnect()
 		}
+	}
+	
+	private func onKey(data: [String: Any]) {
+		logger.debug("key - \(data)")
+		
+		guard let action = data["action"] as? String, let key = data["key"] as? String else { return }
+		
+		client?.handleEvent("key", data: [
+			"action": action,
+			"key": key,
+			"version": data["version"] as? String as Any
+		])
 	}
 	
 	private func onReconnect(data: [Any], ack: SocketAckEmitter) {

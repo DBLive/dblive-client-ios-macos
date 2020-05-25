@@ -12,10 +12,12 @@ final class DBLiveContent: NSObject {
 	private let cache = DBLiveContentCache()
 	private let logger = DBLiveLogger("DBLiveContent")
 	private let request = DBLiveRequest()
+	private let socket: DBLiveSocket
 	private let url: URL
 
-	init(url: URL) {
+	init(url: URL, socket: DBLiveSocket) {
 		self.url = url
+		self.socket = socket
 		
 		super.init()
 	}
