@@ -84,7 +84,7 @@ final class DBLiveClientTests: XCTestCase {
 		let expectation = XCTestExpectation(description: "DBLiveClient is able to put a string value")
 		
 		DBLTestClientFactory.create(expectation: expectation) { dbLiveClient in
-			let key = "testOnKeyChanged",
+			let key = "testOnKeyChanged-\(UUID())",
 				value = UUID().description
 			
 			dbLiveClient.key(key).onChanged { newValue in

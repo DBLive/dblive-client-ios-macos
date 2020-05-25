@@ -148,7 +148,7 @@ final class DBLiveSocket: NSObject {
 		
 		guard let action = data["action"] as? String, let key = data["key"] as? String else { return }
 		
-		client?.handleEvent("key", data: [
+		client?.handleEvent("key:\(key)", data: [
 			"action": action,
 			"key": key,
 			"version": data["version"] as? String as Any
