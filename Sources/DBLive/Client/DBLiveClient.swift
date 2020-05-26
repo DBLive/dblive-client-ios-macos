@@ -21,7 +21,7 @@ open class DBLiveClient: NSObject {
 	private var socket: DBLiveSocket?
 
 	@objc
-	init(appKey: String) {
+	public init(appKey: String) {
 		self.appKey = appKey
 		logger = DBLiveLogger("DBLiveClient(\(appKey))")
 		
@@ -30,7 +30,7 @@ open class DBLiveClient: NSObject {
 	
 	@objc
 	@discardableResult
-	func connect() -> DBLiveClient {
+	public func connect() -> DBLiveClient {
 		return connect(timeout: 0)
 	}
 	
@@ -83,7 +83,7 @@ open class DBLiveClient: NSObject {
 	
 	@objc
 	@discardableResult
-	func getAndListen(_ key: String, handler: @escaping (String?) -> ()) -> DBLiveKeyEventListener {
+	public func getAndListen(_ key: String, handler: @escaping (String?) -> ()) -> DBLiveKeyEventListener {
 		get(key, callback: handler)
 		
 		return self.key(key).onChanged(handler: handler)
@@ -101,7 +101,7 @@ open class DBLiveClient: NSObject {
 	
 	@objc
 	@discardableResult
-	func getJsonAndListen(_ key: String, callback: @escaping ([String: Any]?) -> ()) -> DBLiveKeyEventListener {
+	public func getJsonAndListen(_ key: String, callback: @escaping ([String: Any]?) -> ()) -> DBLiveKeyEventListener {
 		getJson(key, callback: callback)
 		
 		return self.key(key).onChanged { result in
@@ -173,7 +173,7 @@ open class DBLiveClient: NSObject {
 		}
 	}
 	
-	func set(_ key: String, value: [String: Any], callback: @escaping (Bool) -> ()) {
+	public func set(_ key: String, value: [String: Any], callback: @escaping (Bool) -> ()) {
 		guard let value = try? JSONSerialization.data(withJSONObject: value) else {
 			return callback(false)
 		}

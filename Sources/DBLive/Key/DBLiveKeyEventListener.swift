@@ -8,7 +8,7 @@
 import Foundation
 
 @objcMembers
-final class DBLiveKeyEventListener: NSObject {
+final public class DBLiveKeyEventListener: NSObject {
 	
 	public let action: String
 	public let handler: DBLiveCallback<String?>
