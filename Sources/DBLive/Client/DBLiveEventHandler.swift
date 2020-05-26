@@ -9,12 +9,12 @@ import Foundation
 
 class DBLiveEventHandler<T>: NSObject
 {
-	public let callback: DBLiveCallback<T>
+	public let handler: DBLiveCallback<T>
 	public let event: String
 	public let id = UUID()
 	
-	init(_ event: String, callback: @escaping DBLiveCallback<T>) {
+	init(_ event: String, handler: @escaping DBLiveCallback<T>) {
 		self.event = event
-		self.callback = callback
+		self.handler = handler
 	}
 }

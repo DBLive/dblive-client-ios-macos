@@ -109,7 +109,7 @@ final class DBLiveKey {
 			stopWatching()
 		}
 		
-		clientKeyListener = client?.on("key:\(key)", callback: { [weak self] data in
+		clientKeyListener = client?.on("key:\(key)", handler: { [weak self] data in
 			guard let this = self else { return }
 			
 			this.onKeyEvent(data: data)

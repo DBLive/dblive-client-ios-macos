@@ -11,6 +11,7 @@ enum DBLiveLoggerLevel: Int
 	case info = 1
 	case warn = 2
 	case error = 3
+	case none = 4
 	
 	var stringValue: String {
 		get
@@ -24,6 +25,8 @@ enum DBLiveLoggerLevel: Int
 				return "WARN"
 			case .error:
 				return "ERROR"
+			case .none:
+				return "NONE"
 			}
 		}
 	}
@@ -31,52 +34,56 @@ enum DBLiveLoggerLevel: Int
 
 final class DBLiveLogger
 {
-	static var doLog = false
+	static var logLevel: DBLiveLoggerLevel = .none
 	
-	var doLog: Bool {
-		get { return _doLog || DBLiveLogger.doLog }
-		set { _doLog = newValue }
+	var logLevel: DBLiveLoggerLevel {
+		get { return _logLevel ?? DBLiveLogger.logLevel }
+		set { _logLevel? = newValue }
 	}
 	
 	private let name: String
 	
-	private var _doLog = false
+	private var _logLevel: DBLiveLoggerLevel?
 	
 	init(_ name: String) {
 		self.name = name
 	}
 	
 	func debug(_ message: @autoclosure () -> String) {
-		guard doLog else { return }
+		guard doLog(level: .debug) else { return }
 
 		commitLog(message(), level: .debug)
 	}
 	
 	func info(_ message: @autoclosure () -> String) {
-		guard doLog else { return }
+		guard doLog(level: .info) else { return }
 
 		commitLog(message(), level: .info)
 	}
 	
 	func warn(_ message: @autoclosure () -> String) {
-		guard doLog else { return }
+		guard doLog(level: .warn) else { return }
 		
 		commitLog(message(), level: .warn)
 	}
 	
 	func error(_ message: @autoclosure () -> String) {
-		guard doLog else { return }
+		guard doLog(level: .error) else { return }
 
 		commitLog(message(), level: .error)
 	}
 	
 	func log(_ message: @autoclosure () -> String, level: DBLiveLoggerLevel = .debug) {
-		guard doLog else { return }
+		guard doLog(level: level) else { return }
 
 		commitLog(message(), level: level)
 	}
 	
 	private func commitLog(_ message: @autoclosure () -> String, level: DBLiveLoggerLevel) {
 		print("\(name) \(level.stringValue): \(message())")
+	}
+	
+	private func doLog(level: DBLiveLoggerLevel) -> Bool {
+		return level.rawValue >= logLevel.rawValue
 	}
 }
