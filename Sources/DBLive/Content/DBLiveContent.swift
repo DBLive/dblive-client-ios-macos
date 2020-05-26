@@ -59,7 +59,7 @@ final class DBLiveContent: NSObject {
 				callback(String(data: result.data, encoding: .utf8))
 			}
 			else if response.statusCode == 304 {
-				// Nothing to do
+				this.logger.debug("304 - Not Modified. Nothing else to do")
 			}
 			else if response.statusCode == 404 || response.statusCode == 403 {
 				this.logger.debug("Key not found")

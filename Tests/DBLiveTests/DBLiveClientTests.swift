@@ -162,6 +162,35 @@ final class DBLiveClientTests: XCTestCase {
 		
 		wait(for: [expectation], timeout: 10.0)
 	}
+	
+	func testGetBeforeConnect() {
+		let expectation = XCTestExpectation(description: "DBLiveClient is able to get a value before the 'connect' method is called."),
+			dblLiveClient = DBLTestClientFactory.create(expectation: expectation)
+		
+		dblLiveClient.get("some-key") { value in
+			XCTAssertNil(value)
+			expectation.fulfill()
+		}
+		
+		wait(for: [expectation], timeout: 10.0)
+	}
+	
+	func testSetBeforeConnect() {
+		let expectation = XCTestExpectation(description: "DBLiveClient is able to set a value before the 'connect' method is called."),
+			dblLiveClient = DBLTestClientFactory.create(expectation: expectation),
+			key = "testSetBeforeConnect-\(UUID())"
+		
+		dblLiveClient.set(key, value: "ABC") { result in
+			XCTAssertTrue(result)
+			
+			dblLiveClient.get(key) { result in
+				XCTAssertEqual(result, "ABC")
+				expectation.fulfill()
+			}
+		}
+		
+		wait(for: [expectation], timeout: 10.0)
+	}
 
     static var allTests = [
         ("testSuccessfulConnection", testSuccessfulConnection),
@@ -169,7 +198,9 @@ final class DBLiveClientTests: XCTestCase {
 		("testSet", testSet),
 		("testGet", testGet),
 		("testOnKeyChanged", testOnKeyChanged),
-		("testGetJsonAndListen", testGetJsonAndListen)
+		("testGetJsonAndListen", testGetJsonAndListen),
+		("testGetBeforeConnect", testGetBeforeConnect),
+		("testSetBeforeConnect", testSetBeforeConnect),
     ]
 	
 }

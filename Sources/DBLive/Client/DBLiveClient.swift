@@ -8,7 +8,16 @@
 import Foundation
 import SocketIO
 
+@objc
+public enum DBLiveClientStatus: Int {
+	case notConnected = 0
+	case connecting = 1
+	case connected = 2
+}
+
 open class DBLiveClient: NSObject {
+	
+	public private(set) var status: DBLiveClientStatus = .notConnected
 	
 	private let appKey: String
 	private let logger: DBLiveLogger
@@ -18,7 +27,13 @@ open class DBLiveClient: NSObject {
 	private var handlers: [DBLiveEventHandler<[String: Any]>] = []
 	private var keys: [String: DBLiveKey] = [:]
 	private var setEnv: String?
-	private var socket: DBLiveSocket?
+	private var socket: DBLiveSocket? {
+		didSet {
+			for key in keys {
+				key.value.socket = socket
+			}
+		}
+	}
 
 	@objc
 	public init(appKey: String) {
@@ -30,18 +45,37 @@ open class DBLiveClient: NSObject {
 	
 	@objc
 	@discardableResult
-	public func connect() -> DBLiveClient {
-		return connect(timeout: 0)
+	public func connect(callback: (() -> ())? = nil) -> DBLiveClient {
+		return connect(timeout: 0, callback: callback)
 	}
 	
 	@objc
 	@discardableResult
-	open func connect(timeout: Double) -> DBLiveClient {
+	open func connect(timeout: Double, callback: (() -> ())? = nil) -> DBLiveClient {
 		assert(timeout >= 0, "Invalid timeout: \(timeout)")
 
-		guard api == nil else {
-			logger.warn("Cannot call 'connect' more than once.")
+		guard status == .notConnected else {
+			if status == .connecting {
+				if let callback = callback {
+					on("connect") { _ in
+						callback()
+					}
+				}
+			}
+			else {
+				logger.warn("Cannot call 'connect' more than once.")
+				callback?()
+			}
+
 			return self
+		}
+		
+		status = .connecting
+		
+		on("connect") { [weak self] _ in
+			self?.logger.debug("Connected...")
+			self?.status = .connected
+			callback?()
 		}
 
 		let api = DBLiveAPI(appKey: appKey, timeout: timeout)
@@ -53,13 +87,18 @@ open class DBLiveClient: NSObject {
 			guard let this = self else { return }
 			
 			if let error = error {
+				this.status = .notConnected
 				this.logger.error("API Connection Error: \(error)")
 				return this.handleEvent("error", data: ["error": error])
 			}
 			
-			guard let result = result else { return }
+			guard let result = result else {
+				this.status = .notConnected
+				return
+			}
 			
 			guard let contentUrl = result.contentUrl else {
+				this.status = .notConnected
 				this.logger.error("No contentDomain was returned from init API call")
 				return this.handleEvent("error", data: ["error": DBLiveError.connectionTimeout])
 			}
@@ -74,7 +113,13 @@ open class DBLiveClient: NSObject {
 	
 	@objc
 	open func get(_ key: String, callback: @escaping (String?) -> ()) {
-		assert(content != nil, "Must call 'connect' before calling 'get'")
+		guard status == .connected else {
+			connect { [weak self] in
+				self?.get(key, callback: callback)
+			}
+			
+			return
+		}
 
 		content!.get(key) { result in
 			callback(result)
@@ -90,8 +135,14 @@ open class DBLiveClient: NSObject {
 	}
 	
 	open func getJson(_ key: String, callback: @escaping([String: Any]?) -> ()) {
-		assert(content != nil, "Must call 'connect' before calling 'getJson'")
-
+		guard status == .connected else {
+			connect { [weak self] in
+				self?.getJson(key, callback: callback)
+			}
+			
+			return
+		}
+		
 		content!.get(key) { result in
 			guard let result = result?.data(using: .utf8) else { return callback(nil) }
 			
@@ -140,6 +191,14 @@ open class DBLiveClient: NSObject {
 	
 	@objc
 	open func set(_ key: String, value: String, contentType: String = "text/plain", callback: @escaping (Bool) -> ()) {
+		guard status == .connected else {
+			connect { [weak self] in
+				self?.set(key, value: value, contentType: contentType, callback: callback)
+			}
+			
+			return
+		}
+		
 		DispatchQueue.global(qos: .background).async { [weak self] in
 			guard let this = self else { return }
 			
@@ -151,15 +210,11 @@ open class DBLiveClient: NSObject {
 		}
 		
 		if (setEnv == "socket") {
-			assert(socket != nil, "Must call 'connect' before calling 'set'")
-
 			socket!.put(key, value: value, contentType: contentType) { result in
 				return callback(result.versionId != nil)
 			}
 		}
 		else {
-			assert(api != nil, "Must call 'connect' before calling 'set'")
-
 			api!.put(key, value: value, contentType: contentType) { [weak self] (result, error) in
 				let logger = self?.logger
 
@@ -192,6 +247,7 @@ open class DBLiveClient: NSObject {
 	
 	private func connectSocket(url: URL) {
 		logger.debug("Connecting to Socket")
+		
 		socket = DBLiveSocket(url: url, appKey: appKey) { [weak self] event, data in
 			guard let this = self else { return }
 			

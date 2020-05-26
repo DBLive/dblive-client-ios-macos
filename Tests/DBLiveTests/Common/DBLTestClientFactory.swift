@@ -13,19 +13,19 @@ final class DBLTestClientFactory
 	static let testAppKey = "+EzwYKZrXI7eKn/KRtlhURsGsjyP2e+1++vqTDQH"
 	
 	@discardableResult
-	static func create(expectation: XCTestExpectation, callback: @escaping (DBLiveClient) -> Void) -> DBLiveClient {
+	static func create(expectation: XCTestExpectation, callback: ((DBLiveClient) -> Void)? = nil) -> DBLiveClient {
 		let dbLiveClient = DBLiveClient(appKey: testAppKey)
-		
-		dbLiveClient.on("connect") { data in
-			callback(dbLiveClient)
-		}
 		
 		dbLiveClient.onError { error in
 			XCTFail("An error should not have been thrown when connecting with a valid appKey.")
 			expectation.fulfill()
 		}
-				
-		dbLiveClient.connect()
+		
+		if let callback = callback {
+			dbLiveClient.connect {
+				callback(dbLiveClient)
+			}
+		}
 		
 		return dbLiveClient
 	}

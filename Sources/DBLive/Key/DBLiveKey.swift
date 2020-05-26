@@ -15,7 +15,13 @@ final class DBLiveKey {
 	private weak var client: DBLiveClient?
 	private var clientKeyListener: UUID?
 	private var listeners: [DBLiveKeyEventListener] = []
-	private weak var socket: DBLiveSocket?
+	internal weak var socket: DBLiveSocket? {
+		didSet {
+			if isWatching {
+				socket?.watch(key)
+			}
+		}
+	}
 	
 	private var isWatching = true {
 		didSet {
