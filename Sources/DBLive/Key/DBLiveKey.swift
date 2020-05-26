@@ -17,7 +17,7 @@ final class DBLiveKey {
 	private var listeners: [DBLiveKeyEventListener] = []
 	private weak var socket: DBLiveSocket?
 	
-	private var isWatching: Bool {
+	private var isWatching = true {
 		didSet {
 			guard isWatching != oldValue else { return }
 			
@@ -35,7 +35,6 @@ final class DBLiveKey {
 		self.client = client
 		self.socket = socket
 		
-		isWatching = true
 		startWatching()
 	}
 		

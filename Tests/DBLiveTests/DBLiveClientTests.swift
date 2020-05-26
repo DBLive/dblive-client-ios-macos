@@ -128,12 +128,21 @@ final class DBLiveClientTests: XCTestCase {
 				else if count == 2 {
 					XCTAssertNotNil(result)
 					XCTAssertEqual(result?["hello"] as? String, "world")
-					
+				}
+				else if count == 3 {
+					XCTAssertNotNil(result)
+					XCTAssertEqual(result?["hello"] as? String, "world")
+
 					dbLiveClient.set(key, value: ["hello2": "world2"]) { success in
 						XCTAssertTrue(success)
 					}
 				}
-				else if count == 3 {
+				else if count == 4 {
+					XCTAssertNotNil(result)
+					XCTAssertEqual(result?["hello2"] as? String, "world2")
+					XCTAssertNil(result?["hello"])
+				}
+				else if count == 5 {
 					XCTAssertNotNil(result)
 					XCTAssertEqual(result?["hello2"] as? String, "world2")
 					XCTAssertNil(result?["hello"])
@@ -159,7 +168,8 @@ final class DBLiveClientTests: XCTestCase {
 		("testConnectionWithBadAppKey", testConnectionWithBadAppKey),
 		("testSet", testSet),
 		("testGet", testGet),
-		("testOnKeyChanged", testOnKeyChanged)
+		("testOnKeyChanged", testOnKeyChanged),
+		("testGetJsonAndListen", testGetJsonAndListen)
     ]
 	
 }

@@ -140,6 +140,16 @@ open class DBLiveClient: NSObject {
 	
 	@objc
 	open func set(_ key: String, value: String, contentType: String = "text/plain", callback: @escaping (Bool) -> ()) {
+		DispatchQueue.global(qos: .background).async { [weak self] in
+			guard let this = self else { return }
+			
+			this.handleEvent("key:\(key)", data: [
+				"action": "changed",
+				"key": key,
+				"value": value
+			])
+		}
+		
 		if (setEnv == "socket") {
 			assert(socket != nil, "Must call 'connect' before calling 'set'")
 
