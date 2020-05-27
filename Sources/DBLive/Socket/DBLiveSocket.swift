@@ -13,19 +13,19 @@ final class DBLiveSocket: NSObject {
 	var isConnected = false
 	
 	private let appKey: String
-	private let eventHandler: (String, [String:Any]) -> ()
 	private let logger = DBLiveLogger("DBLiveSocket")
 	private let timeout: Double = 0
 	private let url: URL
 	
+	private weak var client: DBLiveClient?
 	private var reconnectOnDisconnect = false
 	private var socket: SocketIOClient?
 	private var socketManager: SocketManager?
 
-	init(url: URL, appKey: String, eventHandler: @escaping (String, [String:Any]) -> ()) {
+	init(url: URL, appKey: String, client: DBLiveClient) {
 		self.url = url
 		self.appKey = appKey
-		self.eventHandler = eventHandler
+		self.client = client
 		
 		super.init()
 		
@@ -59,11 +59,27 @@ final class DBLiveSocket: NSObject {
 	}
 	
 	func stopWatching(_ key: String) {
+		guard let client = client, client.status == .connected else {
+			self.client?.once("connect") { _ in
+				self.stopWatching(key)
+			}
+			
+			return
+		}
+		
 		logger.debug("stop watching key \(key)")
 		socket?.emit("stop-watching", with: [["key": key]])
 	}
 	
 	func watch(_ key: String) {
+		guard let client = client, client.status == .connected else {
+			self.client?.once("connect") { _ in
+				self.watch(key)
+			}
+			
+			return
+		}
+
 		logger.debug("watch key \(key)")
 		socket?.emit("watch", with: [["key": key]])
 	}
@@ -126,13 +142,13 @@ final class DBLiveSocket: NSObject {
 			let data = data.first as? [String: Any]
 			
 			if data == nil {
-				this.eventHandler("error", ["error": DBLiveError.unknownError])
+				this.client?.handleEvent("error", data: ["error": DBLiveError.unknownError])
 			}
 			else if let error = DBLiveError(json: data) {
-				this.eventHandler("error", ["error": error])
+				this.client?.handleEvent("error", data: ["error": error])
 			}
 			else {
-				this.eventHandler("connect", [:])
+				this.client?.handleEvent("connect", data: [:])
 			}
 		}
 	}
@@ -145,11 +161,11 @@ final class DBLiveSocket: NSObject {
 		
 	private func onDBLError(data: [Any], ack: SocketAckEmitter) {
 		logger.debug("dbl-error - \(data)")
-		
 	}
 	
 	private func onDisconnect(data: [Any], ack: SocketAckEmitter) {
 		logger.debug("disconnected - \(data)")
+		
 		isConnected = false
 		
 		if reconnectOnDisconnect {
@@ -159,7 +175,8 @@ final class DBLiveSocket: NSObject {
 	}
 	
 	private func onError(data: [Any], ack: SocketAckEmitter) {
-		logger.debug("error - \(data)")
+		logger.error("socket error - \(data)")
+		
 		if let msg = data.first as? String, msg == "Session ID unknown", let socket = socket {
 			reconnectOnDisconnect = true
 			socket.disconnect()
@@ -171,7 +188,7 @@ final class DBLiveSocket: NSObject {
 		
 		guard let action = data["action"] as? String, let key = data["key"] as? String else { return }
 		
-		eventHandler("key:\(key)", [
+		client?.handleEvent("key:\(key)", data: [
 			"action": action,
 			"key": key,
 			"value": data["value"] as? String as Any,

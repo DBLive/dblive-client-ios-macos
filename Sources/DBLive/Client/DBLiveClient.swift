@@ -57,14 +57,17 @@ open class DBLiveClient: NSObject {
 		guard status == .notConnected else {
 			if status == .connecting {
 				if let callback = callback {
-					on("connect") { _ in
+					once("connect") { _ in
 						callback()
 					}
 				}
 			}
-			else {
+			else if status == .connected {
 				logger.warn("Cannot call 'connect' more than once.")
 				callback?()
+			}
+			else {
+				logger.error("Unhandled status '\(status)'")
 			}
 
 			return self
@@ -72,8 +75,7 @@ open class DBLiveClient: NSObject {
 		
 		status = .connecting
 		
-		on("connect") { [weak self] _ in
-			self?.logger.debug("Connected...")
+		once("connect") { [weak self] _ in
 			self?.status = .connected
 			callback?()
 		}
@@ -130,7 +132,7 @@ open class DBLiveClient: NSObject {
 	@discardableResult
 	public func getAndListen(_ key: String, handler: @escaping (String?) -> ()) -> DBLiveKeyEventListener {
 		get(key, callback: handler)
-		
+
 		return self.key(key).onChanged(handler: handler)
 	}
 	
@@ -171,8 +173,8 @@ open class DBLiveClient: NSObject {
 	
 	@objc
 	@discardableResult
-	open func on(_ event: String, handler: @escaping DBLiveCallback<[String: Any]>) -> UUID {
-		let eventHandler = DBLiveEventHandler(event, handler: handler)
+	open func on(_ event: String, once: Bool = false, handler: @escaping DBLiveCallback<[String: Any]>) -> UUID {
+		let eventHandler = DBLiveEventHandler(event, once: once, handler: handler)
 		
 		handlers.append(eventHandler)
 		
@@ -181,8 +183,14 @@ open class DBLiveClient: NSObject {
 	
 	@objc
 	@discardableResult
+	open func once(_ event: String, handler: @escaping DBLiveCallback<[String: Any]>) -> UUID {
+		return on(event, once: true, handler: handler)
+	}
+	
+	@objc
+	@discardableResult
 	open func onError(handler: @escaping (DBLiveError) -> ()) -> UUID {
-		return self.on("error") { data in
+		return on("error") { data in
 			guard let error = data["error"] as? DBLiveError else { return }
 			
 			handler(error)
@@ -198,17 +206,7 @@ open class DBLiveClient: NSObject {
 			
 			return
 		}
-		
-		DispatchQueue.global(qos: .background).async { [weak self] in
-			guard let this = self else { return }
-			
-			this.handleEvent("key:\(key)", data: [
-				"action": "changed",
-				"key": key,
-				"value": value
-			])
-		}
-		
+				
 		if (setEnv == "socket") {
 			socket!.put(key, value: value, contentType: contentType) { result in
 				return callback(result.versionId != nil)
@@ -226,6 +224,16 @@ open class DBLiveClient: NSObject {
 				return callback(result?.versionId != nil)
 			}
 		}
+		
+		DispatchQueue.global(qos: .background).async { [weak self] in
+			guard let this = self else { return }
+			
+			this.handleEvent("key:\(key)", data: [
+				"action": "changed",
+				"key": key,
+				"value": value
+			])
+		}
 	}
 	
 	public func set(_ key: String, value: [String: Any], callback: @escaping (Bool) -> ()) {
@@ -236,10 +244,22 @@ open class DBLiveClient: NSObject {
 		set(key, value: String(data: value, encoding: .utf8)!, contentType: "application/json", callback: callback)
 	}
 	
-	internal func key(_ key: String) -> DBLiveKey {
-		assert(socket != nil, "Must call 'connect' before calling 'key'")
+	internal func handleEvent(_ event: String, data: [String: Any]) {
+		logger.debug("handleEvent(\(event), \(data)")
 		
-		let dbLiveKey = keys[key] ?? DBLiveKey(key: key, client: self, socket: socket!)
+		for eventHandler in handlers where eventHandler.event == event && eventHandler.isActive {
+			if eventHandler.once {
+				eventHandler.isActive = false
+			}
+
+			DispatchQueue.global(qos: .background).async {
+				eventHandler.handler(data)
+			}
+		}
+	}
+	
+	internal func key(_ key: String) -> DBLiveKey {
+		let dbLiveKey = keys[key] ?? DBLiveKey(key: key, client: self, socket: socket)
 		keys[key] = dbLiveKey
 		
 		return dbLiveKey
@@ -248,23 +268,9 @@ open class DBLiveClient: NSObject {
 	private func connectSocket(url: URL) {
 		logger.debug("Connecting to Socket")
 		
-		socket = DBLiveSocket(url: url, appKey: appKey) { [weak self] event, data in
-			guard let this = self else { return }
-			
-			this.handleEvent(event, data: data)
-		}
+		socket = DBLiveSocket(url: url, appKey: appKey, client: self)
 	}
-	
-	private func handleEvent(_ event: String, data: [String: Any]) {
-		logger.debug("handleEvent(\(event), \(data)")
 		
-		for eventHandler in handlers where eventHandler.event == event {
-			DispatchQueue.global(qos: .background).async {
-				eventHandler.handler(data)
-			}
-		}
-	}
-	
 	deinit {
 		socket?.dispose()
 	}

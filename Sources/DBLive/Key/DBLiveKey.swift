@@ -36,7 +36,7 @@ final class DBLiveKey {
 		}
 	}
 	
-	init(key: String, client: DBLiveClient, socket: DBLiveSocket) {
+	init(key: String, client: DBLiveClient, socket: DBLiveSocket?) {
 		self.key = key
 		self.client = client
 		self.socket = socket

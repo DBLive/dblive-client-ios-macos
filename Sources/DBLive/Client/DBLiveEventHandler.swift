@@ -13,8 +13,13 @@ class DBLiveEventHandler<T>: NSObject
 	public let event: String
 	public let id = UUID()
 	
-	init(_ event: String, handler: @escaping DBLiveCallback<T>) {
+	internal let once: Bool
+	
+	public internal(set) var isActive = true
+	
+	init(_ event: String, once: Bool = false, handler: @escaping DBLiveCallback<T>) {
 		self.event = event
+		self.once = once
 		self.handler = handler
 	}
 }
