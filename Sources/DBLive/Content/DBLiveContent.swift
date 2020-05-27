@@ -27,11 +27,6 @@ final class DBLiveContent: NSObject {
 		
 		let url = self.url.appendingPathComponent(key)
 		
-		if let value = cache.get(url) {
-			logger.debug("Cache hit. Returning cache value first.")
-			callback(String(data: value, encoding: .utf8))
-		}
-		
 		var headers: [String: String] = [:]
 
 		if let etag = cache.etag(url) {
@@ -70,6 +65,19 @@ final class DBLiveContent: NSObject {
 				this.logger.warn("Unhandled response status code \(response.statusCode)")
 			}
 		}
+	}
+	
+	func getFromCache(_ key: String) -> String? {
+		logger.debug("getFromCache '\(key)'")
+		
+		let url = self.url.appendingPathComponent(key)
+		
+		if let value = cache.get(url) {
+			logger.debug("Cache hit.")
+			return String(data: value, encoding: .utf8)
+		}
+
+		return nil
 	}
 	
 }

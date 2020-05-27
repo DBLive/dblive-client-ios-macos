@@ -117,14 +117,22 @@ open class DBLiveClient: NSObject {
 	open func get(_ key: String, callback: @escaping (String?) -> ()) {
 		guard status == .connected else {
 			connect { [weak self] in
-				self?.get(key, callback: callback)
+				DispatchQueue.main.async {
+					self?.get(key, callback: callback)
+				}
 			}
 			
 			return
 		}
+		
+		if let value = content!.getFromCache(key) {
+			callback(value)
+		}
 
 		content!.get(key) { result in
-			callback(result)
+			DispatchQueue.main.async {
+				callback(result)
+			}
 		}
 	}
 	
@@ -145,10 +153,19 @@ open class DBLiveClient: NSObject {
 			return
 		}
 		
+		if let cachedValue = content!.getFromCache(key),
+			let cachedData = cachedValue.data(using: .utf8),
+			let cachedObj = try? JSONSerialization.jsonObject(with: cachedData, options: []) as? [String: Any]
+		{
+			callback(cachedObj)
+		}
+		
 		content!.get(key) { result in
-			guard let result = result?.data(using: .utf8) else { return callback(nil) }
+			DispatchQueue.main.async {
+				guard let result = result?.data(using: .utf8) else { return callback(nil) }
 			
-			callback(try? JSONSerialization.jsonObject(with: result, options: []) as? [String: Any])
+				callback(try? JSONSerialization.jsonObject(with: result, options: []) as? [String: Any])
+			}
 		}
 	}
 	
@@ -158,9 +175,11 @@ open class DBLiveClient: NSObject {
 		getJson(key, callback: callback)
 		
 		return self.key(key).onChanged { result in
-			guard let result = result?.data(using: .utf8) else { return callback(nil) }
+			DispatchQueue.main.async {
+				guard let result = result?.data(using: .utf8) else { return callback(nil) }
 
-			callback(try? JSONSerialization.jsonObject(with: result, options: []) as? [String: Any])
+				callback(try? JSONSerialization.jsonObject(with: result, options: []) as? [String: Any])
+			}
 		}
 	}
 			
