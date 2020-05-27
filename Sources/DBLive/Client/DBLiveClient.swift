@@ -217,7 +217,7 @@ open class DBLiveClient: NSObject {
 	}
 	
 	@objc
-	open func set(_ key: String, value: String, contentType: String = "text/plain", callback: @escaping (Bool) -> ()) {
+	open func set(_ key: String, value: String, contentType: String = "text/plain", callback: ((Bool) -> ())? = nil) {
 		guard status == .connected else {
 			connect { [weak self] in
 				self?.set(key, value: value, contentType: contentType, callback: callback)
@@ -228,7 +228,7 @@ open class DBLiveClient: NSObject {
 				
 		if (setEnv == "socket") {
 			socket!.put(key, value: value, contentType: contentType) { result in
-				return callback(result.versionId != nil)
+				return callback?(result.versionId != nil)
 			}
 		}
 		else {
@@ -237,10 +237,11 @@ open class DBLiveClient: NSObject {
 
 				if let error = error {
 					logger?.debug("Failed to set '\(key)' to '\(value)': \(error)")
-					return callback(false)
+					callback?(false)
+					return
 				}
 
-				return callback(result?.versionId != nil)
+				callback?(result?.versionId != nil)
 			}
 		}
 		
@@ -255,9 +256,10 @@ open class DBLiveClient: NSObject {
 		}
 	}
 	
-	public func set(_ key: String, value: [String: Any], callback: @escaping (Bool) -> ()) {
+	public func set(_ key: String, value: [String: Any], callback: ((Bool) -> ())? = nil) {
 		guard let value = try? JSONSerialization.data(withJSONObject: value) else {
-			return callback(false)
+			callback?(false)
+			return
 		}
 		
 		set(key, value: String(data: value, encoding: .utf8)!, contentType: "application/json", callback: callback)
