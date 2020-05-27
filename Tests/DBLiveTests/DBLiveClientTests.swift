@@ -203,12 +203,18 @@ final class DBLiveClientTests: XCTestCase {
 		dblLiveClient.getAndListen(key) { value in
 			handleCount += 1
 
-			print("** getAndListen \(handleCount)")
+			print("** getAndListen \(handleCount) - \(value ?? "nil")")
 			
+			// 1st time: event from calling "set"
 			if handleCount == 1 {
 				XCTAssertEqual(value, expectedValue)
 			}
+			// 2nd time: event from socket notifying change
 			else if handleCount == 2 {
+				XCTAssertEqual(value, expectedValue)
+			}
+			// 3rd time: inital get request has responded.
+			else if handleCount == 3 {
 				XCTAssertEqual(value, expectedValue)
 				expectation.fulfill()
 			}
@@ -233,6 +239,7 @@ final class DBLiveClientTests: XCTestCase {
 		("testGetJsonAndListen", testGetJsonAndListen),
 		("testGetBeforeConnect", testGetBeforeConnect),
 		("testSetBeforeConnect", testSetBeforeConnect),
+		("testGetAndListenBeforeConnect", testGetAndListenBeforeConnect),
     ]
 	
 }

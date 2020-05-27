@@ -25,11 +25,12 @@ final class DBLiveContent: NSObject {
 	func get(_ key: String, callback: @escaping (String?) -> ()) {
 		logger.debug("get '\(key)'")
 		
-		let url = self.url.appendingPathComponent(key)
-		
+		let url = self.url.appendingPathComponent(key),
+			cachedValue = cache.get(url)
+
 		var headers: [String: String] = [:]
 
-		if let etag = cache.etag(url) {
+		if cachedValue != nil, let etag = cache.etag(url) {
 			logger.debug("Local Etag: \(etag)")
 			headers["If-None-Match"] = etag
 		}
@@ -54,7 +55,8 @@ final class DBLiveContent: NSObject {
 				callback(String(data: result.data, encoding: .utf8))
 			}
 			else if response.statusCode == 304 {
-				this.logger.debug("304 - Not Modified. Nothing else to do")
+				this.logger.debug("304 - Returning cached version")
+				callback(String(data: cachedValue!, encoding: .utf8))
 			}
 			else if response.statusCode == 404 || response.statusCode == 403 {
 				this.logger.debug("Key not found")
