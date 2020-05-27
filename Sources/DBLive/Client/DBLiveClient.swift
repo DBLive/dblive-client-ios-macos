@@ -23,10 +23,18 @@ open class DBLiveClient: NSObject {
 	private let logger: DBLiveLogger
 	
 	private var api: DBLiveAPI?
-	private var content: DBLiveContent?
 	private var handlers: [DBLiveEventHandler<[String: Any]>] = []
 	private var keys: [String: DBLiveKey] = [:]
 	private var setEnv: String?
+	
+	private var content: DBLiveContent? {
+		didSet {
+			for key in keys {
+				key.value.content = content
+			}
+		}
+	}
+
 	private var socket: DBLiveSocket? {
 		didSet {
 			for key in keys {
@@ -292,7 +300,7 @@ open class DBLiveClient: NSObject {
 	}
 	
 	internal func key(_ key: String) -> DBLiveKey {
-		let dbLiveKey = keys[key] ?? DBLiveKey(key: key, client: self, socket: socket)
+		let dbLiveKey = keys[key] ?? DBLiveKey(key: key, client: self, socket: socket, content: content)
 		keys[key] = dbLiveKey
 		
 		return dbLiveKey

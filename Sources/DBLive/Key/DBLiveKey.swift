@@ -16,6 +16,8 @@ final class DBLiveKey {
 	private weak var client: DBLiveClient?
 	private var clientKeyListener: UUID?
 	private var listeners: [DBLiveKeyEventListener] = []
+
+	internal weak var content: DBLiveContent?
 	internal weak var socket: DBLiveSocket? {
 		didSet {
 			if isWatching {
@@ -37,7 +39,7 @@ final class DBLiveKey {
 		}
 	}
 	
-	init(key: String, client: DBLiveClient, socket: DBLiveSocket?) {
+	init(key: String, client: DBLiveClient, socket: DBLiveSocket?, content: DBLiveContent?) {
 		self.key = key
 		self.client = client
 		self.socket = socket
@@ -85,8 +87,7 @@ final class DBLiveKey {
 		
 		let action = data["action"] as! String,
 			value = data["value"] as? String,
-			version = data["version"] as? String,
-			versionKey = version != nil ? "\(key)-\(version!)" : key
+			version = data["version"] as? String
 		
 		if let version = version {
 			if let versionHandled = versionsHandled.object(forKey: NSString(string: version)), versionHandled.boolValue {
@@ -101,9 +102,11 @@ final class DBLiveKey {
 		if action == "changed" {
 			if let value = value {
 				emitToListeners(action: "changed", value: value)
+				content?.setCache(key, value: value)
+				content?.setCache(key, version: version, value: value)
 			}
 			else {
-				client?.get(versionKey, callback: { [weak self] value in
+				content?.get(key, version: version, callback: { [weak self] value in
 					guard let this = self else { return }
 					
 					this.emitToListeners(action: "changed", value: value)
@@ -112,6 +115,8 @@ final class DBLiveKey {
 		}
 		else if action == "deleted" {
 			emitToListeners(action: "changed", value: nil)
+			content?.deleteCache(key)
+			content?.deleteCache(key, version: version)
 		}
 		else {
 			logger.warn("No key event handler for action '\(action)'")

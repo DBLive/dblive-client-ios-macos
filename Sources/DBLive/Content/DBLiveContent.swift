@@ -22,10 +22,26 @@ final class DBLiveContent: NSObject {
 		super.init()
 	}
 	
-	func get(_ key: String, callback: @escaping (String?) -> ()) {
-		logger.debug("get '\(key)'")
-		
-		let url = self.url.appendingPathComponent(key),
+	func deleteCache(_ key: String, version: String? = nil) {
+		if let version = version {
+			logger.debug("delete '\(key)', version '\(version)'")
+		}
+		else {
+			logger.debug("delete '\(key)'")
+		}
+
+		cache.delete(urlFor(key, version: version))
+	}
+	
+	func get(_ key: String, version: String? = nil, callback: @escaping (String?) -> ()) {
+		if let version = version {
+			logger.debug("get '\(key)', version '\(version)'")
+		}
+		else {
+			logger.debug("get '\(key)'")
+		}
+				
+		let url = urlFor(key, version: version),
 			cachedValue = cache.get(url)
 
 		var headers: [String: String] = [:]
@@ -72,7 +88,7 @@ final class DBLiveContent: NSObject {
 	func getFromCache(_ key: String) -> String? {
 		logger.debug("getFromCache '\(key)'")
 		
-		let url = self.url.appendingPathComponent(key)
+		let url = urlFor(key)
 		
 		if let value = cache.get(url) {
 			logger.debug("Cache hit.")
@@ -80,6 +96,23 @@ final class DBLiveContent: NSObject {
 		}
 
 		return nil
+	}
+	
+	func setCache(_ key: String, version: String? = nil, value: String) {
+		if let version = version {
+			logger.debug("setCache '\(key)', version '\(version)': \(value)")
+		}
+		else {
+			logger.debug("setCache '\(key)': \(value)")
+		}
+		
+		let url = urlFor(key, version: version)
+
+		cache.set(url, data: value.data(using: .utf8), etag: nil)
+	}
+	
+	private func urlFor(_ key: String, version: String? = nil) -> URL {
+		return url.appendingPathComponent(version != nil ? "\(key)-\(version!)" : key)
 	}
 	
 }

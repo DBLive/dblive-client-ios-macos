@@ -17,6 +17,13 @@ class DBLiveContentCache {
 		}
 	}
 	
+	func delete(_ url: URL) {
+		guard let localCacheUrl = self.localCacheUrl(url: url), let localCacheEtagUrl = self.localCacheEtagUrl(url: url) else { return }
+
+		try? FileManager.default.removeItem(atPath: localCacheUrl.path)
+		try? FileManager.default.removeItem(atPath: localCacheEtagUrl.path)
+	}
+	
 	func etag(_ url: URL) -> String? {
 		guard let localCacheEtagUrl = localCacheEtagUrl(url: url) else { return nil }
 		
@@ -34,7 +41,13 @@ class DBLiveContentCache {
 		
 		if let data = data {
 			try? data.write(to: localCacheUrl, options: .atomic)
-			try? etag?.write(to: localCacheEtagUrl, atomically: true, encoding: .utf8)
+			
+			if let etag = etag {
+				try? etag.write(to: localCacheEtagUrl, atomically: true, encoding: .utf8)
+			}
+			else {
+				try? FileManager.default.removeItem(atPath: localCacheEtagUrl.path)
+			}
 		}
 		else {
 			try? FileManager.default.removeItem(atPath: localCacheUrl.path)

@@ -205,15 +205,15 @@ final class DBLiveClientTests: XCTestCase {
 
 			print("** getAndListen \(handleCount) - \(value ?? "nil")")
 			
-			// 1st time: event from calling "set"
+			// 1st time: inital get request has responded
 			if handleCount == 1 {
-				XCTAssertEqual(value, expectedValue)
+				XCTAssertNil(value)
 			}
-			// 2nd time: event from socket notifying change
+			// 2nd time: set has immediately pushed new value
 			else if handleCount == 2 {
 				XCTAssertEqual(value, expectedValue)
 			}
-			// 3rd time: inital get request has responded.
+			// 3rd time: socket notified of new change
 			else if handleCount == 3 {
 				XCTAssertEqual(value, expectedValue)
 				expectation.fulfill()
@@ -223,8 +223,10 @@ final class DBLiveClientTests: XCTestCase {
 			}
 		}
 		
-		dblLiveClient.set(key, value: expectedValue) { result in
-			XCTAssertTrue(result)
+		DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+			dblLiveClient.set(key, value: expectedValue) { result in
+				XCTAssertTrue(result)
+			}
 		}
 		
 		wait(for: [expectation], timeout: 10.0)
