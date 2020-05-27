@@ -11,6 +11,7 @@ final class DBLiveKey {
 	
 	private let key: String
 	private let logger = DBLiveLogger("DBLiveKey")
+	private let versionsHandled = NSCache<NSString, NSNumber>()
 	
 	private weak var client: DBLiveClient?
 	private var clientKeyListener: UUID?
@@ -86,6 +87,16 @@ final class DBLiveKey {
 			value = data["value"] as? String,
 			version = data["version"] as? String,
 			versionKey = version != nil ? "\(key)-\(version!)" : key
+		
+		if let version = version {
+			if let versionHandled = versionsHandled.object(forKey: NSString(string: version)), versionHandled.boolValue {
+				logger.debug("onKeyEvent already handled")
+				return
+			}
+			else {
+				versionsHandled.setObject(NSNumber(booleanLiteral: true), forKey: NSString(string: version))
+			}
+		}
 		
 		if action == "changed" {
 			if let value = value {
