@@ -1,5 +1,5 @@
 # DBLive
-DBLive client for iOS/OSX
+DBLive client for iOS/maxOS
 
 ## Usage
 
