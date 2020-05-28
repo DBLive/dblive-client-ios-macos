@@ -1,7 +1,9 @@
 # DBLive
 DBLive client for iOS/OSX
 
-## Example
+## Usage
+
+### Swift
 ```swift
 import DBLive
 
