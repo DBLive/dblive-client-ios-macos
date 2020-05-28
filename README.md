@@ -12,15 +12,37 @@ dbLive.set("hello", value: "world")
 
 // get key "hello"
 dbLive.get("hello") { value in
-	print("value: '\(value)'") // prints "value: 'world'"
+	print("hello '\(value)'") // prints "hello 'world'"
 }
 
 // get and listen to key "hello"
 let listener = dbLive.getAndListen("hello") { value in
-	print("value: '\(value)'") // prints "value: 'world'" immediately
-	// will print new value every time "hello" changes until "listener.isListening" is false
+	print("hello '\(value)'") // prints "hello 'world'" immediately
+	
+	// this handler will be called every time "hello" changes until "listener.isListening" is false
 }
 
+// can start/stop listener by changing "isListening" on the listener
+listener.isListening = true|false
+
+// can also set, get and listen to json objects
+dbLive.set("hello-json", value: [
+	"hello": "world"
+])
+
+dbLive.getJson("hello-json") { value in
+	let hello = value["hello"] as! String
+	print("hello '\(hello)'") // prints "hello 'world'"
+}
+
+let listener = dbLive.getJsonAndListen("hello-json") { value in
+	let hello = value["hello"] as! String
+	print("hello '\(hello)'") // prints "hello 'world'" immediately
+	
+	// this handler will be called every time "hello-json" changes until "listener.isListening" is false
+}
+
+// can start/stop listener by changing "isListening" on the listener
 listener.isListening = true|false
 ```
 
