@@ -63,7 +63,7 @@ let package = Package(
 		.executable(name: "YourPackage", targets: ["YourTargetName"])
 	],
 	dependencies: [
-		.package(url: "https://github.com/DBLive/dblive-client-ios-macos", .upToNextMinor(from: "0.0.1-alpha.10"))
+		.package(url: "https://github.com/DBLive/dblive-client-ios-macos", .upToNextMinor(from: "0.0.1-alpha.11"))
 	],
 	targets: [
 		.target(name: "YourTargetName", dependencies: ["DBLive"])
