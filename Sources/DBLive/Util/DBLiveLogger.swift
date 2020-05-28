@@ -5,7 +5,7 @@
 //  Created by Mike Richards on 5/22/20.
 //
 
-enum DBLiveLoggerLevel: Int
+public enum DBLiveLoggerLevel: Int
 {
 	case debug = 0
 	case info = 1
@@ -32,7 +32,7 @@ enum DBLiveLoggerLevel: Int
 	}
 }
 
-final class DBLiveLogger
+final public class DBLiveLogger
 {
 	static var logLevel: DBLiveLoggerLevel = .none
 	

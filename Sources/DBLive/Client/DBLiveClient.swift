@@ -20,7 +20,7 @@ open class DBLiveClient: NSObject {
 	public private(set) var status: DBLiveClientStatus = .notConnected
 	
 	private let appKey: String
-	private let logger: DBLiveLogger
+	private let logger = DBLiveLogger("DBLiveClient")
 	
 	private var api: DBLiveAPI?
 	private var handlers: [DBLiveEventHandler<[String: Any]>] = []
@@ -46,7 +46,6 @@ open class DBLiveClient: NSObject {
 	@objc
 	public init(appKey: String) {
 		self.appKey = appKey
-		logger = DBLiveLogger("DBLiveClient")
 		
 		super.init()
 	}
@@ -304,6 +303,19 @@ open class DBLiveClient: NSObject {
 		keys[key] = dbLiveKey
 		
 		return dbLiveKey
+	}
+	
+	internal func reset() {
+		logger.debug("reset")
+
+		socket?.dispose()
+
+		socket = nil
+		api = nil
+		content = nil
+		status = .notConnected
+		
+		connect()
 	}
 	
 	private func connectSocket(url: URL) {

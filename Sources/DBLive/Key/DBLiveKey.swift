@@ -11,7 +11,7 @@ final class DBLiveKey {
 	
 	private let key: String
 	private let logger = DBLiveLogger("DBLiveKey")
-	private let versionsHandled = NSCache<NSString, NSNumber>()
+	private let keyValueVersions = NSCache<NSString, NSString>()
 	
 	private weak var client: DBLiveClient?
 	private var clientKeyListener: UUID?
@@ -86,24 +86,34 @@ final class DBLiveKey {
 		logger.debug("onKeyEvent(\(data)")
 		
 		let action = data["action"] as! String,
+			etag = data["etag"] as? String,
 			value = data["value"] as? String,
 			version = data["version"] as? String
 		
+		var doEmit = true
+		
 		if let version = version {
-			if let versionHandled = versionsHandled.object(forKey: NSString(string: version)), versionHandled.boolValue {
-				logger.debug("onKeyEvent already handled")
-				return
+			let versionKey = NSString(string: version)
+			
+			if let versionValue = keyValueVersions.object(forKey: versionKey) as String?, versionValue == value {
+				doEmit = false
+			}
+			else if let value = value {
+				keyValueVersions.setObject(NSString(string: value), forKey: versionKey)
 			}
 			else {
-				versionsHandled.setObject(NSNumber(booleanLiteral: true), forKey: NSString(string: version))
+				keyValueVersions.removeObject(forKey: versionKey)
 			}
 		}
 		
 		if action == "changed" {
 			if let value = value {
-				emitToListeners(action: "changed", value: value)
-				content?.setCache(key, value: value)
+				content?.setCache(key, value: value, etag: etag)
 				content?.setCache(key, version: version, value: value)
+				
+				if doEmit {
+					emitToListeners(action: "changed", value: value)
+				}
 			}
 			else {
 				content?.get(key, version: version, callback: { [weak self] value in
@@ -114,9 +124,12 @@ final class DBLiveKey {
 			}
 		}
 		else if action == "deleted" {
-			emitToListeners(action: "changed", value: nil)
 			content?.deleteCache(key)
 			content?.deleteCache(key, version: version)
+			
+			if doEmit {
+				emitToListeners(action: "changed", value: nil)
+			}
 		}
 		else {
 			logger.warn("No key event handler for action '\(action)'")

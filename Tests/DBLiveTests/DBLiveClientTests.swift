@@ -194,13 +194,13 @@ final class DBLiveClientTests: XCTestCase {
 	
 	func testGetAndListenBeforeConnect() {
 		let expectation = XCTestExpectation(description: "DBLiveClient is able to set a value before the 'connect' method is called."),
-			dblLiveClient = DBLTestClientFactory.create(expectation: expectation),
+			dblClient = DBLTestClientFactory.create(expectation: expectation),
 			key = "testGetAndListenBeforeConnect-\(UUID())",
 			expectedValue = "value-\(UUID())"
 		
 		var handleCount = 0
 		
-		dblLiveClient.getAndListen(key) { value in
+		dblClient.getAndListen(key) { value in
 			handleCount += 1
 
 			print("** getAndListen \(handleCount) - \(value ?? "nil")")
@@ -223,8 +223,8 @@ final class DBLiveClientTests: XCTestCase {
 			}
 		}
 		
-		DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-			dblLiveClient.set(key, value: expectedValue) { result in
+		DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+			dblClient.set(key, value: expectedValue) { result in
 				XCTAssertTrue(result)
 			}
 		}

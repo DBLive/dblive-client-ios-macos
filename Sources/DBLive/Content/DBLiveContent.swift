@@ -98,7 +98,7 @@ final class DBLiveContent: NSObject {
 		return nil
 	}
 	
-	func setCache(_ key: String, version: String? = nil, value: String) {
+	func setCache(_ key: String, version: String? = nil, value: String, etag: String? = nil) {
 		if let version = version {
 			logger.debug("setCache '\(key)', version '\(version)': \(value)")
 		}
@@ -108,7 +108,7 @@ final class DBLiveContent: NSObject {
 		
 		let url = urlFor(key, version: version)
 
-		cache.set(url, data: value.data(using: .utf8), etag: nil)
+		cache.set(url, data: value.data(using: .utf8), etag: etag)
 	}
 	
 	private func urlFor(_ key: String, version: String? = nil) -> URL {
