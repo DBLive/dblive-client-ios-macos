@@ -74,6 +74,7 @@ listener.isListening = true|false
   * `set` and `get` will be restricted based on appKey. Individual devices can be granted additional functionalitality via a *secret key* that can be stored securely in your backend system.
   * `lockAndSet`: Will grant a temporary lock on a key so no other device can change its value. This will help assure that setting the value will not override a `set` from another device.
   * `Int values`: Ints will have additional functionality, such as incrementing and decrementing in a way that 2 devices can simultaneously do it.
+  * `Remote Notifications`: We'll accept push tokens so we can update key data in the background.
 
 ## Installation
 
