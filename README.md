@@ -1,6 +1,8 @@
 # DBLive
 DBLive client for iOS/macOS
 
+DBLive is a service that allows devices to stay synchronized in real-time. Updates to data are instantly passed to all devices within a matter of ms, even at scale across regions.  
+
 ## Usage
 
 ### Swift
@@ -47,6 +49,23 @@ let listener = dbLive.getJsonAndListen("hello-json") { value in
 // can start/stop listener by changing "isListening" on the listener
 listener.isListening = true|false
 ```
+
+#### Methods
+`set(_ key: String, value: String)`: Sets `key` to a string value.
+
+`set(_ key: String, value: [String: Any])`: Sets `key` to a dictionary value. The dictionary can handle any object that can be serialized into JSON.
+
+`get(_ key: String) { (value: String?) in
+}`: Gets the current **String** value of `key`
+
+`getJson(_ key: String) { (value: [String: Any]?) in
+}`: Gets the current **Dictionary** value of `key`
+
+`getAndListen(_ key: String) { (value: String?) in 
+} -> DBLiveKeyEventListener`: Gets the current **String** value of `key` returned immediately, and then listens for any updates to its value. Set the `.isListening` property of the returned `DBLiveKeyEventListener` to `false` to stop listening.
+
+`getJsonAndListen(_ key: String) { (value: String?) in 
+} -> DBLiveKeyEventListener`: Gets the current **Dictionary** value of `key` returned immediately, and then listens for any updates to its value. Set the `.isListening` property of the returned `DBLiveKeyEventListener` to `false` to stop listening.
 
 ## Installation
 
