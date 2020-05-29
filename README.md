@@ -4,7 +4,7 @@ DBLive client for iOS/macOS
 DBLive is a service that allows devices to stay synchronized in real-time. Updates to data are instantly passed to all devices within a matter of ms, even at scale across regions.
 
 ## Development
-This project is in initial development. No website or admin portal are available at this time. If you would like to use this library, please contact me at (dblive@mikerichards.tech)[mailto:dblive@mikerichards.tech].
+This project is in initial development. No website or admin portal are available at this time. If you would like to use this library, please contact me at [dblive@mikerichards.tech](mailto:dblive@mikerichards.tech).
 
 ## Usage
 
