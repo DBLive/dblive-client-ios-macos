@@ -34,9 +34,9 @@ public enum DBLiveLoggerLevel: Int
 
 final public class DBLiveLogger
 {
-	static var logLevel: DBLiveLoggerLevel = .none
+	public static var logLevel: DBLiveLoggerLevel = .none
 	
-	var logLevel: DBLiveLoggerLevel {
+	public var logLevel: DBLiveLoggerLevel {
 		get { return _logLevel ?? DBLiveLogger.logLevel }
 		set { _logLevel? = newValue }
 	}
