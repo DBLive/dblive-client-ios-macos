@@ -1,7 +1,10 @@
 # DBLive
 DBLive client for iOS/macOS
 
-DBLive is a service that allows devices to stay synchronized in real-time. Updates to data are instantly passed to all devices within a matter of ms, even at scale across regions.  
+DBLive is a service that allows devices to stay synchronized in real-time. Updates to data are instantly passed to all devices within a matter of ms, even at scale across regions.
+
+## Development
+This project is in initial development. No website or admin portal are available at this time. If you would like to use this library, please contact me at (dblive@mikerichards.tech)[mailto:dblive@mikerichards.tech].
 
 ## Usage
 
@@ -66,6 +69,11 @@ listener.isListening = true|false
 
 `getJsonAndListen(_ key: String) { (value: String?) in 
 } -> DBLiveKeyEventListener`: Gets the current **Dictionary** value of `key` returned immediately, and then listens for any updates to its value. Set the `.isListening` property of the returned `DBLiveKeyEventListener` to `false` to stop listening.
+
+#### Planned future functionality
+  * `set` and `get` will be restricted based on appKey. Individual devices can be granted additional functionalitality via a *secret key* that can be stored securely in your backend system.
+  * `lockAndSet`: Will grant a temporary lock on a key so no other device can change its value. This will help assure that setting the value will not override a `set` from another device.
+  * `Int values`: Ints will have additional functionality, such as incrementing and decrementing in a way that 2 devices can simultaneously do it.
 
 ## Installation
 
