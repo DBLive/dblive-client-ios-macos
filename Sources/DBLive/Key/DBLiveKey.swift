@@ -15,6 +15,7 @@ final class DBLiveKey {
 	
 	private weak var client: DBLiveClient?
 	private var clientKeyListener: UUID?
+	private var currentValue: String?
 	private var listeners: [DBLiveKeyEventListener] = []
 
 	internal weak var content: DBLiveContent?
@@ -55,12 +56,6 @@ final class DBLiveKey {
 		return listener
 	}
 	
-	internal func restartSocketWatch() {
-		if isWatching {
-			socket?.watch(key)
-		}
-	}
-	
 	private func checkListenerStatus() {
 		if isWatching {
 			if !listeners.contains(where: { $0.isListening }) {
@@ -83,7 +78,7 @@ final class DBLiveKey {
 			}
 		}
 	}
-	
+		
 	private func onKeyEvent(data: [String: Any]) {
 		logger.debug("onKeyEvent(\(data)")
 		
@@ -114,6 +109,7 @@ final class DBLiveKey {
 				content?.setCache(key, version: version, value: value)
 				
 				if doEmit {
+					currentValue = value
 					emitToListeners(action: "changed", value: value)
 				}
 			}
@@ -121,6 +117,7 @@ final class DBLiveKey {
 				content?.get(key, version: version, callback: { [weak self] value in
 					guard let this = self else { return }
 					
+					this.currentValue = value
 					this.emitToListeners(action: "changed", value: value)
 				})
 			}
@@ -130,11 +127,26 @@ final class DBLiveKey {
 			content?.deleteCache(key, version: version)
 			
 			if doEmit {
+				currentValue = nil
 				emitToListeners(action: "changed", value: nil)
 			}
 		}
 		else {
 			logger.warn("No key event handler for action '\(action)'")
+		}
+	}
+	
+	private func restartSocketWatch() {
+		if isWatching {
+			socket?.watch(key)
+			
+			content?.get(key, callback: { [weak self] value in
+				guard let this = self else { return }
+				
+				if value != this.currentValue {
+					this.emitToListeners(action: "changed", value: value)
+				}
+			})
 		}
 	}
 	

@@ -20,7 +20,6 @@ final class DBLiveClientTests: XCTestCase {
 		let expectation = XCTestExpectation(description: "DBLiveClient connects successfully.")
 
 		DBLTestClientFactory.create(expectation: expectation) { data in
-			XCTAssertEqual(data.attributeKeys.count, 0)
 			expectation.fulfill()
 		}
 		
