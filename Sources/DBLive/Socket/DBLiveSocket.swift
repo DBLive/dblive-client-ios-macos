@@ -120,12 +120,12 @@ final class DBLiveSocket: NSObject {
 			this.onKey(data: data.first as? [String: Any] ?? [:])
 		}
 		
-		socket!.on("reconnect") { [weak self] data, ack in
+		socket!.on("reconnect") { [weak self] data, _ in
 			guard let this = self else { return }
-			this.onReconnect(data: data, ack: ack)
+			this.onReconnecting(data: data)
 		}
-		
-		socket!.on("reset") { [weak self] _,_  in
+				
+		socket!.on("reset") { [weak self] _, _  in
 			guard let this = self else { return }
 			this.onReset()
 		}
@@ -154,6 +154,7 @@ final class DBLiveSocket: NSObject {
 			}
 			else {
 				this.client?.handleEvent("connect", data: [:])
+				this.client?.socket = self
 			}
 		}
 	}
@@ -202,7 +203,7 @@ final class DBLiveSocket: NSObject {
 		])
 	}
 	
-	private func onReconnect(data: [Any], ack: SocketAckEmitter) {
+	private func onReconnecting(data: [Any]) {
 		logger.debug("reconnecting - \(data)")
 		isConnected = false
 	}

@@ -19,11 +19,7 @@ final class DBLiveKey {
 
 	internal weak var content: DBLiveContent?
 	internal weak var socket: DBLiveSocket? {
-		didSet {
-			if isWatching {
-				socket?.watch(key)
-			}
-		}
+		didSet { restartSocketWatch() }
 	}
 	
 	private var isWatching = true {
@@ -57,6 +53,12 @@ final class DBLiveKey {
 		listeners.append(listener)
 		
 		return listener
+	}
+	
+	internal func restartSocketWatch() {
+		if isWatching {
+			socket?.watch(key)
+		}
 	}
 	
 	private func checkListenerStatus() {

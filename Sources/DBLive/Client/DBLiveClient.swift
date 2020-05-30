@@ -19,6 +19,14 @@ open class DBLiveClient: NSObject {
 	
 	public private(set) var status: DBLiveClientStatus = .notConnected
 	
+	internal var socket: DBLiveSocket? {
+		didSet {
+			for key in keys {
+				key.value.socket = socket
+			}
+		}
+	}
+	
 	private let appKey: String
 	private let logger = DBLiveLogger("DBLiveClient")
 	
@@ -31,14 +39,6 @@ open class DBLiveClient: NSObject {
 		didSet {
 			for key in keys {
 				key.value.content = content
-			}
-		}
-	}
-
-	private var socket: DBLiveSocket? {
-		didSet {
-			for key in keys {
-				key.value.socket = socket
 			}
 		}
 	}
