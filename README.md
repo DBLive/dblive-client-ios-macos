@@ -1,10 +1,19 @@
 # DBLive
-DBLive client for iOS/macOS
+*DBLive* client for iOS/macOS
 
-DBLive is a service that allows devices to stay synchronized in real-time. Updates to data are instantly passed to all devices within a matter of ms, even at scale across regions.
+### What is it?
+*DBLive* is a service that allows devices to synchronize data in real-time. Updates to data are instantly passed to all devices within a matter of ms, even at scale across regions.
 
-## Development
-This project is in initial development. No website or admin portal are available at this time. If you would like to use this library, please contact me at [dblive@mikerichards.tech](mailto:dblive@mikerichards.tech).
+### Currently in development
+This project is currently in development. No website or admin portal are available at this time. If you have any questions or would like to use or play with this library, please contact me at [dblive@mikerichards.tech](mailto:dblive@mikerichards.tech).
+
+## Example
+See this client in action with a tic-tac-toe iOS app. This is obviously **not** a full-featured Tic-Tac-Toe game; you can play both X and O from the same device, or separate, and other people might be playing the game at the same time. The point of the example is to demonstrate how data stays synchronized between devices using *DBLive*, and how it could work for your project.
+
+[TicTacToe - SwiftUI](https://github.com/DBLive/dblive-ios-example-tictactoe-swiftui)
+
+### Example Web App (Tic-Tac-Toe)
+[https://tictactoe.dblive.io](https://tictactoe.dblive.io)
 
 ## Usage
 
@@ -98,6 +107,3 @@ let package = Package(
     ]
 )
 ```
-
-## Example
-[TicTacToe - SwiftUI](https://github.com/DBLive/dblive-ios-example-tictactoe-swiftui)
