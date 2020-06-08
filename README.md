@@ -88,22 +88,6 @@ listener.isListening = true|false
 ## Installation
 
 ### Swift Package Manager
-Add the project as a dependency to your App/Package.swift
-```swift
-// swift-tools-version:5.0
+Add this swift package as a dependency to your Project:
 
-import PackageDescription
-
-let package = Package(
-    name: "YourPackage",
-    products: [
-        .executable(name: "YourPackage", targets: ["YourTargetName"])
-    ],
-    dependencies: [
-        .package(url: "https://github.com/DBLive/dblive-client-ios-macos", .upToNextMinor(from: "0.0.1-alpha.13"))
-    ],
-    targets: [
-        .target(name: "YourTargetName", dependencies: ["DBLive"])
-    ]
-)
-```
+![DBLive Swift Package](https://github.com/DBLive/dblive-client-ios-macos/raw/master/Assets/SwiftPackages-Screenshot.png)
